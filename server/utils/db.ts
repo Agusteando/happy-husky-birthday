@@ -46,6 +46,21 @@ pool.query(`
   )
 `).catch(console.error)
 
+// Nueva tabla para el motor de activos globales de felicitación
+pool.query(`
+  CREATE TABLE IF NOT EXISTS asset_templates (
+    id VARCHAR(255) PRIMARY KEY,
+    name VARCHAR(255),
+    image_url LONGTEXT,
+    is_default BOOLEAN DEFAULT FALSE,
+    target_plantel VARCHAR(100),
+    target_employee VARCHAR(255),
+    allow_random BOOLEAN DEFAULT FALSE,
+    crop_meta TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )
+`).catch(console.error)
+
 pool.query(`
   CREATE TABLE IF NOT EXISTS birthday_messages (
     id VARCHAR(255) PRIMARY KEY,

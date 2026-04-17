@@ -15,7 +15,7 @@
       </div>
 
       <div class="card-body">
-        <h3 class="employee-name">{{ item.name }} {{ item.apellidoPaterno || '' }}</h3>
+        <h3 class="employee-name">{{ item.name }}</h3>
         <p class="employee-role">{{ item.plantel?.label || item.plantel?.name || item.plantel || 'Sin sede asignada' }}</p>
 
         <div class="editable-fields">
@@ -99,16 +99,17 @@ const isToday = (d) => d && dayjs(d).format('MM-DD') === dayjs().format('MM-DD')
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 16px;
+  margin-bottom: 20px; /* Incrementado para el Avatar Hero de 110px */
 }
 
 .actions-top {
   display: flex;
   gap: 8px;
+  padding-top: 8px; /* Alineación óptica con el tope del nuevo avatar */
 }
 
 .icon-btn { cursor: pointer; transition: 0.2s; }
-.star-icon { width: 24px; height: 24px; }
+.star-icon { width: 26px; height: 26px; }
 .star-active { color: var(--secondary-gold); fill: var(--secondary-gold); filter: drop-shadow(0 2px 8px rgba(212,175,55,0.5)); }
 .star-inactive { color: #E2E8F0; }
 .star-inactive:hover { color: #CBD5E1; }
@@ -119,9 +120,10 @@ const isToday = (d) => d && dayjs(d).format('MM-DD') === dayjs().format('MM-DD')
 
 .employee-name {
   margin: 0 0 4px 0;
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 800;
   color: var(--primary-navy);
+  letter-spacing: -0.01em;
 }
 
 .employee-role {
@@ -132,6 +134,7 @@ const isToday = (d) => d && dayjs(d).format('MM-DD') === dayjs().format('MM-DD')
   display: inline-block;
   padding: 4px 12px;
   border-radius: 12px;
+  font-weight: 500;
 }
 
 .editable-fields {
