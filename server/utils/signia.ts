@@ -15,7 +15,23 @@ export const extractBirthdayFromCurp = (curp?: string): string | null => {
     year = 2000 + yy
   } else if (/[0-9]/.test(centuryChar)) {
     year = 1900 + yy
-    if (yy < 25 && year < 1925) year = 2000 + yy // Fallback logic
+    if (yy < 25 && year < 1925) year = 2000 + yy
   }
   return `${year}-${mm}-${dd}`
+}
+
+/**
+ * Resolves absolute URLs for Signia assets.
+ * Fixes the issue where the API occasionally returns localhost or relative storage paths.
+ */
+export const resolveSigniaUrl = (url?: string): string | null => {
+  if (!url) return null;
+  if (url.includes('signia.casitaapps.com')) return url;
+  
+  // Match relative storage paths and replace root domain
+  const match = url.match(/\/storage\/.*/);
+  if (match) {
+    return `https://signia.casitaapps.com${match[0]}`;
+  }
+  return url;
 }

@@ -11,7 +11,7 @@ export const pool = mysql.createPool({
   queueLimit: 0
 })
 
-// Initialize tables
+// Initialize core tables
 pool.query(`
   CREATE TABLE IF NOT EXISTS overrides (
     id VARCHAR(255) PRIMARY KEY,
@@ -34,5 +34,33 @@ pool.query(`
     event_id VARCHAR(255),
     baja BOOLEAN DEFAULT FALSE,
     picture VARCHAR(255)
+  )
+`).catch(console.error)
+
+// Initialize new Template Studio tables
+pool.query(`
+  CREATE TABLE IF NOT EXISTS templates (
+    id VARCHAR(255) PRIMARY KEY COMMENT 'Linked directly to employee_id',
+    name VARCHAR(255),
+    image_url LONGTEXT,
+    crop_meta TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )
+`).catch(console.error)
+
+pool.query(`
+  CREATE TABLE IF NOT EXISTS birthday_messages (
+    id VARCHAR(255) PRIMARY KEY,
+    employee_id VARCHAR(255),
+    author_name VARCHAR(255),
+    message TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )
+`).catch(console.error)
+
+pool.query(`
+  CREATE TABLE IF NOT EXISTS plantel_configs (
+    plantel VARCHAR(100) PRIMARY KEY,
+    recipient_emails TEXT
   )
 `).catch(console.error)

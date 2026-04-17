@@ -2,15 +2,29 @@ import { ref, computed } from 'vue'
 import dayjs from 'dayjs'
 
 export const useEmployees = () => {
-  const employees = ref([])
-  const loading = ref(true)
+  const employees = ref<any[]>([])
+  const loading = ref(false)
   const filterPlantel = ref('')
   const filterSearch = ref('')
+  const heroFaces = ref<string[]>([])
 
-  const fetchEmployees = async () => {
+  const fetchHeroFaces = async () => {
+    try {
+      const data: any = await $fetch('/api/employees/faces')
+      heroFaces.value = data
+    } catch (e) {
+      console.error('No se pudieron cargar los rostros iniciales', e)
+    }
+  }
+
+  const fetchEmployees = async (plantel: string) => {
+    if (!plantel) {
+      employees.value = []
+      return
+    }
     loading.value = true
     try {
-      const data: any = await $fetch('/api/employees')
+      const data: any = await $fetch(`/api/employees?plantel=${encodeURIComponent(plantel)}`)
       employees.value = data
     } catch (e) {
       console.error(e)
@@ -21,29 +35,20 @@ export const useEmployees = () => {
 
   const filteredEmployees = computed(() => {
     return employees.value.filter((emp: any) => {
-      const matchesPlantel = !filterPlantel.value || emp.plantel?.name === filterPlantel.value || emp.plantel === filterPlantel.value
       const searchTxt = filterSearch.value.toLowerCase()
       const matchesSearch = !searchTxt || 
                             emp.name?.toLowerCase().includes(searchTxt) || 
                             emp.email?.toLowerCase().includes(searchTxt)
-      return matchesPlantel && matchesSearch
+      return matchesSearch
     })
-  })
-
-  // Select 5 random employees with pictures for the 3D scene, gracefully fallback if no picture
-  const randomFaces = computed(() => {
-    const defaultFaces = ['/main.png', '/hhb.png']
-    const valid = employees.value.filter((e: any) => e.picture).map((e: any) => e.picture)
-    const combined = [...valid, ...defaultFaces, ...defaultFaces, ...defaultFaces]
-    return combined.sort(() => 0.5 - Math.random()).slice(0, 5)
   })
 
   const stats = computed(() => {
     const list = employees.value
     const total = list.length
-    const withEmail = list.filter((e: any) => e.email).length
-    const incomplete = total - withEmail
+    if (total === 0) return null
 
+    const withEmail = list.filter((e: any) => e.email).length
     let validAges = 0
     let totalAge = 0
     let todayBdays = 0
@@ -65,10 +70,7 @@ export const useEmployees = () => {
 
     return {
       total,
-      withEmail,
-      incomplete,
-      withEmailPct: total ? (withEmail / total * 100).toFixed(1) : 0,
-      incompletePct: total ? (incomplete / total * 100).toFixed(1) : 0,
+      withEmailPct: (withEmail / total * 100).toFixed(0),
       avgAge: validAges ? Math.round(totalAge / validAges) : 0,
       todayBdays
     }
@@ -80,14 +82,14 @@ export const useEmployees = () => {
         method: 'PATCH',
         body: { id, ...payload }
       })
-      await fetchEmployees()
+      if (filterPlantel.value) await fetchEmployees(filterPlantel.value)
     } catch (e) {
-      console.error('Update failed', e)
+      console.error('Error al actualizar', e)
     }
   }
 
   const deleteEmployee = async (id: string) => {
-    if (!confirm('¿Estás seguro de dar de baja a este colaborador del sistema?')) return
+    if (!confirm('¿Estás seguro de ocultar a este colaborador de las celebraciones activas?')) return
     await updateEmployee(id, { baja: true })
   }
 
@@ -104,16 +106,18 @@ export const useEmployees = () => {
         await updateEmployee(emp.id, { event_id: res.eventId })
       }
     } catch (e) {
-      console.error('Calendar error', e)
+      console.error('Error sincronizando calendario', e)
     }
   }
 
   const addExternalUser = async (user: any) => {
     try {
       await $fetch('/api/employees/add', { method: 'POST', body: user })
-      await fetchEmployees()
+      if (filterPlantel.value === user.plantel || filterPlantel.value === 'Externo') {
+        await fetchEmployees(filterPlantel.value)
+      }
     } catch (e) {
-      console.error('Failed adding user', e)
+      console.error('Error agregando invitado', e)
     }
   }
 
@@ -142,9 +146,9 @@ export const useEmployees = () => {
   }
 
   return {
-    employees, loading, filterPlantel, filterSearch,
-    filteredEmployees, stats, randomFaces,
-    fetchEmployees, updateEmployee, deleteEmployee,
+    employees, loading, filterPlantel, filterSearch, heroFaces,
+    filteredEmployees, stats,
+    fetchEmployees, fetchHeroFaces, updateEmployee, deleteEmployee,
     toggleCalendarEvent, addExternalUser, exportExcel
   }
 }

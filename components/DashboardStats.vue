@@ -1,39 +1,30 @@
 <template>
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-icon-bg">👥</div>
-      <div class="stat-content">
-        <div class="stat-value">{{ stats.total }}</div>
-        <div class="stat-label">Miembros del Equipo</div>
+  <div v-if="stats" class="elegant-stats-container">
+    <div class="stat-pill">
+      <span class="stat-icon">✨</span>
+      <div class="stat-text">
+        <strong>{{ stats.total }}</strong> Colaboradores en la sede
       </div>
     </div>
-    <div class="stat-card success-card">
-      <div class="stat-icon-bg">✉️</div>
-      <div class="stat-content">
-        <div class="stat-value">{{ stats.withEmail }}</div>
-        <div class="stat-label">Con Correo Electrónico ({{ stats.withEmailPct }}%)</div>
+    
+    <div class="stat-pill">
+      <span class="stat-icon">🎂</span>
+      <div class="stat-text">
+        <strong>{{ stats.todayBdays }}</strong> Cumpleaños hoy
       </div>
     </div>
-    <div class="stat-card danger-card">
-      <div class="stat-icon-bg">⚠️</div>
-      <div class="stat-content">
-        <div class="stat-value">{{ stats.incomplete }}</div>
-        <div class="stat-label">Datos Incompletos ({{ stats.incompletePct }}%)</div>
+
+    <div class="stat-pill">
+      <span class="stat-icon">🌟</span>
+      <div class="stat-text">
+        Edad promedio: <strong>{{ stats.avgAge }} años</strong>
       </div>
     </div>
-    <div class="stat-card accent-card premium-metric">
-      <div class="stat-icon-bg">⏳</div>
-      <div class="stat-content">
-        <div class="stat-value avg-age">{{ stats.avgAge }} <span class="text-sm">años</span></div>
-        <div class="stat-label">Edad Promedio General</div>
-      </div>
-    </div>
-    <div class="stat-card festive-card">
-      <div class="festive-glow"></div>
-      <div class="stat-icon-bg">🎉</div>
-      <div class="stat-content">
-        <div class="stat-value highlight">{{ stats.todayBdays }}</div>
-        <div class="stat-label">Cumpleaños Hoy</div>
+
+    <div class="stat-pill subtle-pill">
+      <span class="stat-icon">✉️</span>
+      <div class="stat-text">
+        Contactos actualizados: <strong>{{ stats.withEmailPct }}%</strong>
       </div>
     </div>
   </div>
@@ -44,102 +35,51 @@ defineProps({ stats: Object })
 </script>
 
 <style scoped>
-.stats-grid { 
-  display: grid; 
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
-  gap: 20px; 
-  margin-bottom: 32px; 
+.elegant-stats-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 32px;
+  position: relative;
+  z-index: 10;
 }
 
-.stat-card {
-  background: var(--surface-color); 
-  padding: 24px; 
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-subtle); 
-  border: 1px solid var(--border-color);
-  position: relative;
-  overflow: hidden;
+.stat-pill {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  padding: 12px 24px;
+  border-radius: 30px;
   display: flex;
   align-items: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  gap: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  transition: transform 0.2s ease;
 }
 
-.stat-card:hover {
+.stat-pill:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
 }
 
-.stat-icon-bg {
-  position: absolute;
-  right: -10px;
-  bottom: -20px;
-  font-size: 6rem;
-  opacity: 0.04;
-  user-select: none;
+.subtle-pill {
+  opacity: 0.85;
+  background: rgba(248, 250, 252, 0.9);
 }
 
-.stat-content {
-  position: relative;
-  z-index: 1;
+.stat-icon {
+  font-size: 1.2rem;
 }
 
-.stat-value { 
-  font-size: 2.2rem; 
-  font-weight: 800; 
-  color: var(--primary-navy); 
-  line-height: 1;
-  margin-bottom: 6px;
+.stat-text {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
 }
 
-.stat-label { 
-  color: var(--text-secondary); 
-  font-size: 0.85rem; 
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.success-card .stat-value { color: var(--success); }
-.danger-card .stat-value { color: var(--danger); }
-
-.premium-metric {
-  background: linear-gradient(145deg, #FFFFFF 0%, #FAFAFA 100%);
-  border: 1px solid rgba(212, 175, 55, 0.3);
-}
-.avg-age {
-  color: var(--secondary-gold);
-  text-shadow: 0 2px 4px rgba(212, 175, 55, 0.1);
-}
-.text-sm { 
-  font-size: 1.2rem; 
-  font-weight: 600;
-  color: var(--text-secondary); 
-}
-
-.festive-card { 
-  background: linear-gradient(135deg, #1C2541 0%, #0B132B 100%); 
-  border: none;
-  color: white;
-}
-
-.festive-card .stat-label {
-  color: #CBD5E1;
-}
-
-.festive-card .highlight { 
-  color: var(--accent-amber); 
-  text-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
-}
-
-.festive-glow {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: radial-gradient(circle at center, rgba(245, 158, 11, 0.15) 0%, transparent 70%);
-  animation: pulse-glow 3s infinite alternate ease-in-out;
-}
-
-@keyframes pulse-glow {
-  0% { opacity: 0.5; transform: scale(0.9); }
-  100% { opacity: 1; transform: scale(1.1); }
+.stat-text strong {
+  color: var(--primary-navy);
+  font-weight: 700;
+  font-size: 1.05rem;
 }
 </style>

@@ -1,8 +1,11 @@
 import { pool } from '../../utils/db'
-import { fetchSigniaEmployees, extractBirthdayFromCurp } from '../../utils/signia'
+import { fetchSigniaEmployees, extractBirthdayFromCurp, resolveSigniaUrl } from '../../utils/signia'
 import dayjs from 'dayjs'
 
 export default defineEventHandler(async (event) => {
+  const query = getQuery(event)
+  const plantelFilter = query.plantel as string
+
   const signiaData = await fetchSigniaEmployees()
   const [overridesRow]: any = await pool.query('SELECT * FROM overrides')
   const [externalsRow]: any = await pool.query('SELECT * FROM external_users')
@@ -12,12 +15,13 @@ export default defineEventHandler(async (event) => {
 
   let merged = signiaData.map((emp: any) => {
     const ov = overrideMap.get(emp.id) || {}
-    if (ov.baja) return null // Drop users given baja
+    if (ov.baja) return null 
 
     const birthday = ov.birthday ? dayjs(ov.birthday).format('YYYY-MM-DD') : extractBirthdayFromCurp(emp.curp)
 
     return {
       ...emp,
+      picture: resolveSigniaUrl(emp.picture),
       email: ov.email || emp.email,
       birthday,
       high_rank: ov.high_rank === 1,
@@ -36,11 +40,21 @@ export default defineEventHandler(async (event) => {
       birthday: ext.birthday ? dayjs(ext.birthday).format('YYYY-MM-DD') : null,
       high_rank: ext.high_rank === 1,
       event_id: ext.event_id || null,
+      picture: ext.picture || null,
       is_external: true
     })
   })
 
-  // Sort by birthday month/day
+  // Apply Plantel Filter here to save bandwidth and UI processing
+  if (plantelFilter) {
+    merged = merged.filter((emp: any) => {
+      const pName = emp.plantel?.name || emp.plantel
+      if (plantelFilter === 'Externo') return emp.is_external || pName === 'Externo'
+      return pName === plantelFilter
+    })
+  }
+
+  // Sort by birthday month/day logically
   return merged.sort((a, b) => {
     if (!a.birthday) return 1
     if (!b.birthday) return -1
