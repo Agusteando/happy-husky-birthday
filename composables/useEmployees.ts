@@ -1,6 +1,25 @@
 import { ref, computed } from 'vue'
 import dayjs from 'dayjs'
 
+// Strict mapping layer bridging UI friendly names to documented Signia short codes
+export const plantelUItoCode: Record<string, string> = {
+  'Primaria Metepec': 'PM',
+  'Primaria Toluca': 'PT',
+  'Secundaria Metepec': 'SEM',
+  'Secundaria Toluca': 'SE',
+  'Casita Metepec': 'CM',
+  'Casita Toluca': 'CT',
+  'Desarrollo Metepec': 'DES',
+  'Preescolar Toluca': 'PREET',
+  'Preescolar Metepec': 'PREEM',
+  'Corporativo': 'CO',
+  'Dirección Académica': 'DCA',
+  'General': 'GRAL',
+  'Instituto Secundaria Toluca': 'IS',
+  'Instituto Secundaria Metepec': 'ISM',
+  'Externos e Invitados Especiales': 'EXT'
+}
+
 export const useEmployees = () => {
   const employees = ref<any[]>([])
   const loading = ref(false)
@@ -13,27 +32,35 @@ export const useEmployees = () => {
       const data: any = await $fetch('/api/employees/faces')
       heroFaces.value = data
     } catch (e) {
-      console.error('No se pudieron cargar los rostros iniciales', e)
+      console.error('[DEBUG-HHB] Client Fetch - Could not load hero faces', e)
     }
   }
 
-  const fetchEmployees = async (plantel: string) => {
-    if (!plantel) {
+  const fetchEmployees = async (plantelName: string) => {
+    if (!plantelName) {
       employees.value = []
       return
     }
+
+    const resolvedCode = plantelUItoCode[plantelName]
+    if (!resolvedCode) {
+      console.error(`[DEBUG-HHB] Client Fetch - Unknown UI plantel selected: "${plantelName}"`)
+      return
+    }
+
     loading.value = true
-    console.log(`[DEBUG-HHB] Client Fetch - Requesting employees for UI plantel: "${plantel}"`);
+    console.log(`[DEBUG-HHB] Client Fetch - UI Label: "${plantelName}" -> Resolved Internal Code: "${resolvedCode}"`)
+    
     try {
-      const fetchUrl = `/api/employees?plantel=${encodeURIComponent(plantel)}`;
-      console.log(`[DEBUG-HHB] Client Fetch - URL: ${fetchUrl}`);
+      const fetchUrl = `/api/employees?plantelCode=${resolvedCode}`
+      console.log(`[DEBUG-HHB] Client Fetch - Requesting Local Server Adapter: ${fetchUrl}`)
       
-      const data: any = await $fetch(fetchUrl);
-      console.log(`[DEBUG-HHB] Client Fetch - Received ${data?.length || 0} employees.`);
+      const data: any = await $fetch(fetchUrl)
+      console.log(`[DEBUG-HHB] Client Fetch - Received ${data?.length || 0} employees from Server Adapter.`)
       
       employees.value = data
     } catch (e) {
-      console.error('[DEBUG-HHB] Client Fetch - Error:', e)
+      console.error('[DEBUG-HHB] Client Fetch - Error retrieving employee data:', e)
     } finally {
       loading.value = false
     }
@@ -90,7 +117,7 @@ export const useEmployees = () => {
       })
       if (filterPlantel.value) await fetchEmployees(filterPlantel.value)
     } catch (e) {
-      console.error('Error al actualizar', e)
+      console.error('[DEBUG-HHB] Update Error', e)
     }
   }
 
@@ -112,18 +139,18 @@ export const useEmployees = () => {
         await updateEmployee(emp.id, { event_id: res.eventId })
       }
     } catch (e) {
-      console.error('Error sincronizando calendario', e)
+      console.error('[DEBUG-HHB] Calendar Sync Error', e)
     }
   }
 
   const addExternalUser = async (user: any) => {
     try {
       await $fetch('/api/employees/add', { method: 'POST', body: user })
-      if (filterPlantel.value === user.plantel || filterPlantel.value === 'Externo') {
+      if (filterPlantel.value === user.plantel || filterPlantel.value === 'Externos e Invitados Especiales') {
         await fetchEmployees(filterPlantel.value)
       }
     } catch (e) {
-      console.error('Error agregando invitado', e)
+      console.error('[DEBUG-HHB] External User Creation Error', e)
     }
   }
 

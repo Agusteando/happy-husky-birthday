@@ -1,24 +1,4 @@
-export const fetchSigniaEmployees = async () => {
-  const url = 'https://signia.casitaapps.com/api/export/employees?isActive=true';
-  console.log(`[DEBUG-HHB] Signia API - Fetching URL: ${url}`);
-  try {
-    const response = await fetch(url);
-    console.log(`[DEBUG-HHB] Signia API - Response Status: ${response.status}`);
-    
-    if (!response.ok) {
-      console.error(`[DEBUG-HHB] Signia API - Error: ${response.statusText}`);
-      return [];
-    }
-    
-    const data = await response.json();
-    const arrayData = Array.isArray(data) ? data : [];
-    console.log(`[DEBUG-HHB] Signia API - Returned ${arrayData.length} records.`);
-    return arrayData;
-  } catch (e) {
-    console.error('[DEBUG-HHB] Signia API - Request failed:', e);
-    return [];
-  }
-}
+// Legacy fetchSigniaEmployees removed, now dynamically fetched via exact parameters in index.get.ts
 
 export const extractBirthdayFromCurp = (curp?: string): string | null => {
   if (!curp || curp.length < 18) return null
@@ -39,19 +19,19 @@ export const extractBirthdayFromCurp = (curp?: string): string | null => {
 
 export const resolveSigniaUrl = (url?: string): string | null => {
   if (!url) return null;
-  console.log(`[DEBUG-HHB] Image Resolver - Original URL: ${url}`);
+  console.log(`[DEBUG-HHB] Image Resolver - Original string: ${url}`);
   
   let resolved = url;
   
   if (url.startsWith('/storage') || url.startsWith('storage/')) {
     const path = url.startsWith('/') ? url : `/${url}`;
     resolved = `https://signia.casitaapps.com${path}`;
-  } else if (url.startsWith('http://localhost')) {
-    resolved = url.replace(/^http:\/\/localhost(:\d+)?/, 'https://signia.casitaapps.com');
+  } else if (url.startsWith('http://localhost') || url.startsWith('https://localhost')) {
+    resolved = url.replace(/^https?:\/\/localhost(:\d+)?/, 'https://signia.casitaapps.com');
   }
   
   if (resolved !== url) {
-    console.log(`[DEBUG-HHB] Image Resolver - Resolved to: ${resolved}`);
+    console.log(`[DEBUG-HHB] Image Resolver - Resolved out URL: ${resolved}`);
   }
   
   return resolved;

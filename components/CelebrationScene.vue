@@ -108,13 +108,14 @@ const initScene = () => {
     body.castShadow = true
     group.add(body)
 
-    // Billboard Sprite-like Face (Awaits PremiumAvatar)
-    console.log('[DEBUG-HHB] Three.js - Face material initialized with transparent: true, alphaTest removed for soft masking.');
+    // Billboard Sprite-like Face
+    console.log('[DEBUG-HHB] Three.js - Face material enabled with transparent: true & depthWrite: false');
     const headGeo = new THREE.PlaneGeometry(1.2, 1.2)
     const headMat = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       side: THREE.DoubleSide,
       transparent: true,
+      depthWrite: false, // Essential to prevent the transparent areas from blocking confetti rendering
       roughness: 0.6
     })
     
@@ -123,7 +124,7 @@ const initScene = () => {
     head.castShadow = true
     group.add(head)
 
-    // Asynchronously fetch and apply the PremiumAvatar cropped base64
+    // Fetch and apply the PremiumAvatar cropped/masked base64 texture
     if (faceUrl) {
       processAvatar(faceUrl).then(base64 => {
         textureLoader.load(base64, (tex) => {
@@ -134,7 +135,6 @@ const initScene = () => {
       })
     }
 
-    // Explicit 3D Gift Box
     if (index === 1) {
       const giftGroup = new THREE.Group()
       
@@ -157,18 +157,14 @@ const initScene = () => {
       group.add(giftGroup)
     }
 
-    // Story AI target positioning
     const targetPos = new THREE.Vector3()
     if (index === 0) {
-      // Birthday person center
       targetPos.set(0, 0, 2.5)
     } else {
-      // Friends forming a semicircle facing the birthday person
       const angle = ((index - 1) / 3) * Math.PI + Math.PI/4
       targetPos.set(Math.cos(angle) * 3, 0, Math.sin(angle) * 1.5 + 2.5)
     }
     
-    // Initial position far away to allow entrance walk
     group.position.set(targetPos.x + (Math.random()-0.5)*10, 0, targetPos.z - 6)
 
     scene.add(group)
@@ -200,7 +196,6 @@ const initScene = () => {
     animationId = requestAnimationFrame(animate)
     const t = clock.getElapsedTime()
     
-    // Confetti Animation (Tumbling)
     if (confettiMesh) {
       for(let i=0; i<confettiCount; i++) {
         const d = confettiData[i]
@@ -217,25 +212,19 @@ const initScene = () => {
       confettiMesh.instanceMatrix.needsUpdate = true
     }
 
-    // NPC Animation (Story-Driven)
     characters.forEach((char) => {
-      char.mesh.position.lerp(char.targetPos, 0.03) // Smooth walk in
-      
-      // Billboard faces always look at camera
+      char.mesh.position.lerp(char.targetPos, 0.03)
       char.headMesh.lookAt(camera.position)
 
       if (char.isBirthdayPerson) {
-        // Joyful jumping and spinning
         char.mesh.position.y = Math.abs(Math.sin(t * 4)) * 0.6
         char.mesh.rotation.y = Math.sin(t * 2) * 0.3
       } else {
-        // Walking bounce & facing birthday person (0,0,2.5)
         char.mesh.position.y = Math.abs(Math.sin(t * 6 + char.timeOffset)) * 0.1
         char.mesh.lookAt(0, char.mesh.position.y, 2.5)
       }
     })
 
-    // Cinematic subtle camera drift
     camera.position.x = Math.sin(t * 0.15) * 2
     camera.lookAt(0, 1.5, 0)
 

@@ -23,16 +23,9 @@
         <div class="main-selector-glass">
           <select v-model="filterPlantel" class="premium-select hero-select">
             <option value="" disabled>Elige una sede para comenzar...</option>
-            <option value="Primaria Metepec">Primaria Metepec</option>
-            <option value="Primaria Toluca">Primaria Toluca</option>
-            <option value="Secundaria Metepec">Secundaria Metepec</option>
-            <option value="Secundaria Toluca">Secundaria Toluca</option>
-            <option value="Casita Metepec">Casita Metepec</option>
-            <option value="Casita Toluca">Casita Toluca</option>
-            <option value="Desarrollo Metepec">Desarrollo Metepec</option>
-            <option value="Preescolar Toluca">Preescolar Toluca</option>
-            <option value="Preescolar Metepec">Preescolar Metepec</option>
-            <option value="Externo">Externos e Invitados Especiales</option>
+            <option v-for="option in plantelOptions" :key="option" :value="option">
+              {{ option }}
+            </option>
           </select>
         </div>
       </div>
@@ -110,13 +103,14 @@ import DashboardStats from '~/components/DashboardStats.vue'
 import EmployeeTable from '~/components/EmployeeTable.vue'
 import CelebrationScene from '~/components/CelebrationScene.vue'
 import TemplateStudio from '~/components/TemplateStudio.vue'
-import { useEmployees } from '~/composables/useEmployees'
+import { useEmployees, plantelUItoCode } from '~/composables/useEmployees'
 
 const { 
   loading, stats, filteredEmployees, filterPlantel, filterSearch, heroFaces,
   fetchEmployees, fetchHeroFaces, updateEmployee, deleteEmployee, toggleCalendarEvent, addExternalUser, exportExcel 
 } = useEmployees()
 
+const plantelOptions = Object.keys(plantelUItoCode)
 const showAddModal = ref(false)
 const newUser = ref({ name: '', email: '', birthday: '', plantel: '' })
 const studioEmployee = ref(null)
@@ -252,6 +246,7 @@ const logout = async () => {
   cursor: pointer;
   box-shadow: none !important;
   outline: none;
+  appearance: none;
 }
 
 .main-content { 
