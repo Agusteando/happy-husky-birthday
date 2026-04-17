@@ -1,24 +1,26 @@
 import { ref, computed } from 'vue'
 import dayjs from 'dayjs'
 
-// Strict mapping layer bridging UI friendly names to documented Signia short codes
-export const plantelUItoCode: Record<string, string> = {
-  'Primaria Metepec': 'PM',
-  'Primaria Toluca': 'PT',
-  'Secundaria Metepec': 'SEM',
-  'Secundaria Toluca': 'SE',
-  'Casita Metepec': 'CM',
-  'Casita Toluca': 'CT',
-  'Desarrollo Metepec': 'DES',
-  'Preescolar Toluca': 'PREET',
-  'Preescolar Metepec': 'PREEM',
-  'Corporativo': 'CO',
-  'Dirección Académica': 'DCA',
-  'General': 'GRAL',
-  'Instituto Secundaria Toluca': 'IS',
-  'Instituto Secundaria Metepec': 'ISM',
-  'Externos e Invitados Especiales': 'EXT'
+// Strict mapping layer bridging internal codes to requested UI friendly names
+export const codeToUI: Record<string, string> = {
+  IS: "ISSSTE Toluca",
+  ISM: "ISSSTE Metepec",
+  PREEM: "Preescolar Metepec",
+  PREET: "Preescolar Toluca",
+  SE: "Secundaria Toluca",
+  SEM: "Secundaria Metepec",
+  DCA: "Desarrollo Climaya",
+  CO: "Casita Ocoyoacac",
+  CM: "Casita Metepec",
+  CT: "Casita Toluca",
+  DES: "Desarrollo Metepec",
+  EXT: "Externos e Invitados Especiales"
 }
+
+// Reverse lookup for translating UI selection back to internal short code
+export const plantelUItoCode: Record<string, string> = Object.fromEntries(
+  Object.entries(codeToUI).map(([code, label]) => [label, code])
+)
 
 export const useEmployees = () => {
   const employees = ref<any[]>([])
@@ -52,7 +54,8 @@ export const useEmployees = () => {
     console.log(`[DEBUG-HHB] Client Fetch - UI Label: "${plantelName}" -> Resolved Internal Code: "${resolvedCode}"`)
     
     try {
-      const fetchUrl = `/api/employees?plantelCode=${resolvedCode}`
+      // Send both the strict API code and the original UI name (to help match manual external users)
+      const fetchUrl = `/api/employees?plantelCode=${resolvedCode}&plantelNameFallback=${encodeURIComponent(plantelName)}`
       console.log(`[DEBUG-HHB] Client Fetch - Requesting Local Server Adapter: ${fetchUrl}`)
       
       const data: any = await $fetch(fetchUrl)
@@ -146,7 +149,7 @@ export const useEmployees = () => {
   const addExternalUser = async (user: any) => {
     try {
       await $fetch('/api/employees/add', { method: 'POST', body: user })
-      if (filterPlantel.value === user.plantel || filterPlantel.value === 'Externos e Invitados Especiales') {
+      if (filterPlantel.value === user.plantel || filterPlantel.value === codeToUI['EXT']) {
         await fetchEmployees(filterPlantel.value)
       }
     } catch (e) {

@@ -103,14 +103,15 @@ import DashboardStats from '~/components/DashboardStats.vue'
 import EmployeeTable from '~/components/EmployeeTable.vue'
 import CelebrationScene from '~/components/CelebrationScene.vue'
 import TemplateStudio from '~/components/TemplateStudio.vue'
-import { useEmployees, plantelUItoCode } from '~/composables/useEmployees'
+import { useEmployees, codeToUI } from '~/composables/useEmployees'
 
 const { 
   loading, stats, filteredEmployees, filterPlantel, filterSearch, heroFaces,
   fetchEmployees, fetchHeroFaces, updateEmployee, deleteEmployee, toggleCalendarEvent, addExternalUser, exportExcel 
 } = useEmployees()
 
-const plantelOptions = Object.keys(plantelUItoCode)
+// Dynamically generate UI options from the exact requested mapping dictionary
+const plantelOptions = Object.values(codeToUI)
 const showAddModal = ref(false)
 const newUser = ref({ name: '', email: '', birthday: '', plantel: '' })
 const studioEmployee = ref(null)

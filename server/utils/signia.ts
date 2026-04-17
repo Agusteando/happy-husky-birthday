@@ -1,4 +1,32 @@
-// Legacy fetchSigniaEmployees removed, now dynamically fetched via exact parameters in index.get.ts
+/**
+ * Fully restored fetch pipeline to allow shared usage across the server.
+ * Accepts the strict internal code (e.g., 'PM', 'CT') to filter precisely at the external source.
+ */
+export const fetchSigniaEmployees = async (plantelId?: string) => {
+  let url = 'https://signia.casitaapps.com/api/export/employees?isActive=true';
+  if (plantelId) {
+    url += `&plantelId=${plantelId}`;
+  }
+
+  console.log(`[DEBUG-HHB] Signia API - Fetching URL: ${url}`);
+  try {
+    const response = await fetch(url);
+    console.log(`[DEBUG-HHB] Signia API - Response Status: ${response.status}`);
+    
+    if (!response.ok) {
+      console.error(`[DEBUG-HHB] Signia API - Error: ${response.statusText}`);
+      return [];
+    }
+    
+    const data = await response.json();
+    const arrayData = Array.isArray(data) ? data : [];
+    console.log(`[DEBUG-HHB] Signia API - Returned ${arrayData.length} records.`);
+    return arrayData;
+  } catch (e) {
+    console.error('[DEBUG-HHB] Signia API - Request failed:', e);
+    return [];
+  }
+}
 
 export const extractBirthdayFromCurp = (curp?: string): string | null => {
   if (!curp || curp.length < 18) return null
