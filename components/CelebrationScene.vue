@@ -20,11 +20,15 @@ const isDraggingUI = ref(false)
 
 let scene, camera, renderer, animationId
 const characters = []
-let activeCake = null
+let activeFlames = []
+let activeCandleLights = []
 const activeUnwatchers = []
 let confettiMesh = null
-const confettiCount = 350
+const confettiCount = 500
 const dummy = new THREE.Object3D()
+
+let balloons = []
+let floatingStars = []
 
 // User Interaction State
 let targetAngle = 0
@@ -34,11 +38,18 @@ let previousX = 0
 
 const { processAvatar } = usePremiumAvatar()
 
+// Initialized here to guarantee it's available before any avatar watcher triggers
+const clock = new THREE.Clock()
+
 const initScene = () => {
   if (!canvasContainer.value) return
 
   activeUnwatchers.forEach(unwatch => unwatch())
   activeUnwatchers.length = 0
+  activeFlames = []
+  activeCandleLights = []
+  balloons = []
+  floatingStars = []
 
   scene = new THREE.Scene()
   scene.background = new THREE.Color('#FAF9F6')
@@ -52,7 +63,9 @@ const initScene = () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
-  
+  renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.toneMappingExposure = 1.1
+
   // Clean canvas container
   Array.from(canvasContainer.value.children).forEach(child => {
     if (child.tagName === 'CANVAS') child.remove()
@@ -69,80 +82,317 @@ const initScene = () => {
   floor.receiveShadow = true
   scene.add(floor)
 
-  // Lighting
-  const ambientLight = new THREE.AmbientLight('#ffffff', 1.4)
+  // Festive stage carpet
+  const carpetGeo = new THREE.CircleGeometry(5.8, 64)
+  const carpetMat = new THREE.MeshStandardMaterial({ color: '#FFF0F5', roughness: 0.95 })
+  const carpet = new THREE.Mesh(carpetGeo, carpetMat)
+  carpet.rotation.x = -Math.PI / 2
+  carpet.position.set(0, 0.005, 2)
+  carpet.receiveShadow = true
+  scene.add(carpet)
+
+  // === ENHANCED LIGHTING ===
+  const ambientLight = new THREE.AmbientLight('#FFF5E6', 1.5)
   scene.add(ambientLight)
 
-  const spotLight = new THREE.SpotLight('#FFF8E7', 150)
-  spotLight.position.set(2, 12, 6)
-  spotLight.angle = Math.PI / 4
-  spotLight.penumbra = 0.8
-  spotLight.castShadow = true
-  spotLight.shadow.bias = -0.0005
-  scene.add(spotLight)
+  const mainSpot = new THREE.SpotLight('#FFF8E7', 200)
+  mainSpot.position.set(2, 14, 6)
+  mainSpot.angle = Math.PI / 4
+  mainSpot.penumbra = 0.7
+  mainSpot.castShadow = true
+  mainSpot.shadow.bias = -0.0005
+  mainSpot.target.position.set(0, 0, 3)
+  scene.add(mainSpot)
+  scene.add(mainSpot.target)
 
-  const fillLight = new THREE.PointLight('#E2E8F0', 80, 20)
+  const sideSpot = new THREE.SpotLight('#FFE4B5', 90)
+  sideSpot.position.set(-8, 10, 4)
+  sideSpot.angle = Math.PI / 5
+  sideSpot.penumbra = 0.9
+  scene.add(sideSpot)
+
+  const fillLight = new THREE.PointLight('#B0E0FF', 60, 25)
   fillLight.position.set(-6, 5, -2)
   scene.add(fillLight)
 
-  // Centerpiece: Birthday Cake
+  const rimLight = new THREE.PointLight('#FFE4E1', 50, 20)
+  rimLight.position.set(8, 6, -4)
+  scene.add(rimLight)
+
+  // ==========================================
+  // BEAUTIFUL 3-TIER BIRTHDAY CAKE
+  // ==========================================
   const cakeGroup = new THREE.Group()
-  const baseGeo = new THREE.CylinderGeometry(1.2, 1.2, 0.6, 32)
-  const baseMat = new THREE.MeshStandardMaterial({ color: '#FFF5E1', roughness: 0.3 })
-  const base = new THREE.Mesh(baseGeo, baseMat)
-  base.position.y = 0.3
-  base.castShadow = true
-  base.receiveShadow = true
-  cakeGroup.add(base)
-  
-  const icingGeo = new THREE.CylinderGeometry(1.22, 1.22, 0.2, 32)
-  const icingMat = new THREE.MeshStandardMaterial({ color: '#FFB6C1', roughness: 0.2 })
-  const icing = new THREE.Mesh(icingGeo, icingMat)
-  icing.position.y = 0.6
-  icing.castShadow = true
-  cakeGroup.add(icing)
 
-  const candleGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.4, 16)
-  const candleMat = new THREE.MeshStandardMaterial({ color: '#87CEFA', roughness: 0.4 })
-  const candle = new THREE.Mesh(candleGeo, candleMat)
-  candle.position.set(0, 0.9, 0)
-  candle.castShadow = true
-  cakeGroup.add(candle)
+  // Silver serving plate
+  const plateGeo = new THREE.CylinderGeometry(1.68, 1.68, 0.07, 48)
+  const plateMat = new THREE.MeshStandardMaterial({ color: '#C8C8C8', roughness: 0.08, metalness: 0.9 })
+  const plate = new THREE.Mesh(plateGeo, plateMat)
+  plate.position.y = 0.035
+  plate.castShadow = true
+  plate.receiveShadow = true
+  cakeGroup.add(plate)
 
-  const flameGeo = new THREE.ConeGeometry(0.06, 0.18, 16)
-  const flameMat = new THREE.MeshBasicMaterial({ color: '#FFA500' })
-  const flame = new THREE.Mesh(flameGeo, flameMat)
-  flame.position.set(0, 1.15, 0)
-  cakeGroup.add(flame)
+  // ── TIER 1 — Chocolate ──
+  const t1Geo = new THREE.CylinderGeometry(1.40, 1.40, 0.70, 44)
+  const t1Mat = new THREE.MeshStandardMaterial({ color: '#7B3F28', roughness: 0.65 })
+  const t1 = new THREE.Mesh(t1Geo, t1Mat)
+  t1.position.y = 0.42
+  t1.castShadow = true
+  t1.receiveShadow = true
+  cakeGroup.add(t1)
 
-  cakeGroup.position.set(0, 0, 4.5) // Placed in front of the birthday person
+  // Tier 1 white cream top layer
+  const ct1Geo = new THREE.CylinderGeometry(1.42, 1.42, 0.09, 44)
+  const ct1Mat = new THREE.MeshStandardMaterial({ color: '#FFFAF0', roughness: 0.28 })
+  const ct1 = new THREE.Mesh(ct1Geo, ct1Mat)
+  ct1.position.y = 0.815
+  cakeGroup.add(ct1)
+
+  // Tier 1 drips (cream drips hanging down)
+  for (let i = 0; i < 15; i++) {
+    const a = (i / 15) * Math.PI * 2 + (Math.random() - 0.5) * 0.2
+    const r = 1.39
+    const dripH = 0.08 + Math.random() * 0.13
+    const dripGeo = new THREE.CapsuleGeometry(0.054, dripH, 4, 8)
+    const dripMat = new THREE.MeshStandardMaterial({ color: '#FFFAF0', roughness: 0.28 })
+    const drip = new THREE.Mesh(dripGeo, dripMat)
+    drip.position.set(Math.cos(a) * r, 0.74 - dripH * 0.3 - Math.random() * 0.04, Math.sin(a) * r)
+    cakeGroup.add(drip)
+  }
+
+  // ── TIER 2 — Vanilla/Lemon ──
+  const t2Geo = new THREE.CylinderGeometry(0.97, 0.97, 0.58, 44)
+  const t2Mat = new THREE.MeshStandardMaterial({ color: '#FFF8CC', roughness: 0.60 })
+  const t2 = new THREE.Mesh(t2Geo, t2Mat)
+  t2.position.y = 1.155
+  t2.castShadow = true
+  t2.receiveShadow = true
+  cakeGroup.add(t2)
+
+  // Tier 2 pink cream top layer
+  const ct2Geo = new THREE.CylinderGeometry(0.99, 0.99, 0.09, 44)
+  const ct2Mat = new THREE.MeshStandardMaterial({ color: '#FFB6C1', roughness: 0.24 })
+  const ct2 = new THREE.Mesh(ct2Geo, ct2Mat)
+  ct2.position.y = 1.49
+  cakeGroup.add(ct2)
+
+  // Tier 2 pink drips
+  for (let i = 0; i < 11; i++) {
+    const a = (i / 11) * Math.PI * 2 + (Math.random() - 0.5) * 0.2
+    const r = 0.97
+    const dripH = 0.07 + Math.random() * 0.10
+    const dripGeo = new THREE.CapsuleGeometry(0.045, dripH, 4, 8)
+    const dripMat = new THREE.MeshStandardMaterial({ color: '#FFB6C1', roughness: 0.24 })
+    const drip = new THREE.Mesh(dripGeo, dripMat)
+    drip.position.set(Math.cos(a) * r, 1.42 - dripH * 0.3 - Math.random() * 0.04, Math.sin(a) * r)
+    cakeGroup.add(drip)
+  }
+
+  // ── TIER 3 — Strawberry Pink ──
+  const t3Geo = new THREE.CylinderGeometry(0.63, 0.63, 0.47, 44)
+  const t3Mat = new THREE.MeshStandardMaterial({ color: '#FFB6C1', roughness: 0.55 })
+  const t3 = new THREE.Mesh(t3Geo, t3Mat)
+  t3.position.y = 1.77
+  t3.castShadow = true
+  t3.receiveShadow = true
+  cakeGroup.add(t3)
+
+  // Top whipped cream dome
+  const domeGeo = new THREE.SphereGeometry(0.65, 36, 18, 0, Math.PI * 2, 0, Math.PI * 0.52)
+  const domeMat = new THREE.MeshStandardMaterial({ color: '#FFFAF0', roughness: 0.18 })
+  const dome = new THREE.Mesh(domeGeo, domeMat)
+  dome.position.y = 2.005
+  cakeGroup.add(dome)
+
+  // Strawberry on top
+  const strawGeo = new THREE.SphereGeometry(0.12, 12, 12)
+  const strawMat = new THREE.MeshStandardMaterial({ color: '#E82020', roughness: 0.38 })
+  const straw = new THREE.Mesh(strawGeo, strawMat)
+  straw.scale.set(1, 1.3, 1)
+  straw.position.y = 2.26
+  cakeGroup.add(straw)
+
+  // Strawberry leaf/calyx
+  const leafGeo = new THREE.ConeGeometry(0.1, 0.11, 6)
+  const leafMat = new THREE.MeshStandardMaterial({ color: '#228B22', roughness: 0.85 })
+  const leaf = new THREE.Mesh(leafGeo, leafMat)
+  leaf.position.y = 2.35
+  cakeGroup.add(leaf)
+
+  // Colorful sprinkles on top cream
+  const sprGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.09, 6)
+  const sprMesh = new THREE.InstancedMesh(sprGeo, new THREE.MeshBasicMaterial({ color: 0xffffff }), 65)
+  const sprColors = ['#FF6B9D','#FFB347','#87CEEB','#98FB98','#DDA0DD','#FF8C00','#00CED1','#FFD700']
+  const sprCol = new THREE.Color()
+  for (let i = 0; i < 65; i++) {
+    const a = Math.random() * Math.PI * 2
+    const r = Math.random() * 0.5
+    dummy.position.set(Math.cos(a) * r, 2.09, Math.sin(a) * r)
+    dummy.rotation.set(Math.random() * 0.55, Math.random() * Math.PI * 2, Math.random() * 0.55)
+    dummy.updateMatrix()
+    sprMesh.setMatrixAt(i, dummy.matrix)
+    sprCol.set(sprColors[i % sprColors.length])
+    sprMesh.setColorAt(i, sprCol)
+  }
+  sprMesh.instanceMatrix.needsUpdate = true
+  if (sprMesh.instanceColor) sprMesh.instanceColor.needsUpdate = true
+  cakeGroup.add(sprMesh)
+
+  // ── 6 COLORFUL CANDLES ──
+  const candleColours = ['#FF6B9D','#87CEEB','#98FB98','#FFB347','#DDA0DD','#FF8C8C']
+  for (let i = 0; i < 6; i++) {
+    const ang = (i / 6) * Math.PI * 2
+    const cr = 0.34
+    const cx = Math.cos(ang) * cr
+    const cz = Math.sin(ang) * cr
+    const baseY = 2.13
+
+    // Candle body with slight color stripe
+    const candleGeo = new THREE.CylinderGeometry(0.043, 0.043, 0.44, 12)
+    const candleMat = new THREE.MeshStandardMaterial({ color: candleColours[i], roughness: 0.48 })
+    const candle = new THREE.Mesh(candleGeo, candleMat)
+    candle.position.set(cx, baseY + 0.23, cz)
+    candle.castShadow = true
+    cakeGroup.add(candle)
+
+    // Wax drip on candle side
+    const waxGeo = new THREE.SphereGeometry(0.04, 6, 6)
+    const waxMat = new THREE.MeshStandardMaterial({ color: '#FFFFF0', roughness: 0.35 })
+    const wax = new THREE.Mesh(waxGeo, waxMat)
+    wax.scale.set(1, 0.52, 1)
+    wax.position.set(cx + 0.025, baseY + 0.4, cz)
+    cakeGroup.add(wax)
+
+    // Wick
+    const wickGeo = new THREE.CylinderGeometry(0.007, 0.007, 0.06, 6)
+    const wickMat = new THREE.MeshBasicMaterial({ color: '#2D1A0E' })
+    const wick = new THREE.Mesh(wickGeo, wickMat)
+    wick.position.set(cx, baseY + 0.475, cz)
+    cakeGroup.add(wick)
+
+    // Outer flame
+    const flameGeo = new THREE.ConeGeometry(0.053, 0.175, 12)
+    const flameMat = new THREE.MeshBasicMaterial({ color: '#FF8C00' })
+    const flame = new THREE.Mesh(flameGeo, flameMat)
+    flame.position.set(cx, baseY + 0.545, cz)
+    cakeGroup.add(flame)
+    activeFlames.push(flame)
+
+    // Inner flame — bright golden core
+    const innerGeo = new THREE.ConeGeometry(0.026, 0.095, 8)
+    const innerMat = new THREE.MeshBasicMaterial({ color: '#FFE840' })
+    const inner = new THREE.Mesh(innerGeo, innerMat)
+    inner.position.set(cx, baseY + 0.53, cz)
+    cakeGroup.add(inner)
+    activeFlames.push(inner)
+
+    // Per-candle glow point light
+    const glow = new THREE.PointLight('#FF9940', 15, 3.8)
+    glow.position.set(cx, baseY + 0.56, cz)
+    cakeGroup.add(glow)
+    activeCandleLights.push(glow)
+  }
+
+  cakeGroup.position.set(0, 0, 4.5)
   scene.add(cakeGroup)
-  activeCake = flame
 
-  // High-fidelity Confetti
+  // ==========================================
+  // FLOATING BALLOONS
+  // ==========================================
+  const balloonColours = ['#FF6B9D','#87CEEB','#FFD700','#98FB98','#DDA0DD','#FF8C00','#FF4444']
+  const balloonPositions = [
+    [-4.5, 5.5, 0.5],
+    [ 4.5, 6.2, 0.8],
+    [-3.2, 7.2,-1.5],
+    [ 3.8, 5.2,-2.0],
+    [-5.2, 6.8, 2.2],
+    [ 0.5, 8.2,-0.8],
+    [ 5.2, 7.6, 2.6]
+  ]
+  balloonPositions.forEach(([bx, by, bz], bi) => {
+    const bGroup = new THREE.Group()
+
+    const ballGeo = new THREE.SphereGeometry(0.39, 20, 16)
+    const ballMat = new THREE.MeshStandardMaterial({ color: balloonColours[bi], roughness: 0.1 })
+    const ball = new THREE.Mesh(ballGeo, ballMat)
+    ball.scale.y = 1.22
+    ball.castShadow = true
+    bGroup.add(ball)
+
+    // Knot
+    const knotGeo = new THREE.SphereGeometry(0.055, 8, 8)
+    const knotMat = new THREE.MeshStandardMaterial({ color: balloonColours[bi], roughness: 0.85 })
+    const knot = new THREE.Mesh(knotGeo, knotMat)
+    knot.position.y = -0.48
+    bGroup.add(knot)
+
+    // Curly string
+    const pts = []
+    for (let j = 0; j <= 12; j++) {
+      pts.push(new THREE.Vector3(Math.sin(j * 0.38) * 0.06, -0.5 - j * 0.2, 0))
+    }
+    const strGeo = new THREE.BufferGeometry().setFromPoints(pts)
+    const strMat = new THREE.LineBasicMaterial({ color: '#AAAAAA', transparent: true, opacity: 0.65 })
+    const str = new THREE.Line(strGeo, strMat)
+    bGroup.add(str)
+
+    bGroup.position.set(bx, by, bz)
+    scene.add(bGroup)
+    balloons.push({ group: bGroup, baseY: by, phase: Math.random() * Math.PI * 2, speed: 0.26 + Math.random() * 0.18 })
+  })
+
+  // ==========================================
+  // FLOATING GOLD STARS
+  // ==========================================
+  const starPositionsList = [
+    [-3.5, 7.5, 3.0],
+    [ 3.5, 8.3, 2.5],
+    [ 0.0, 9.6,-1.5],
+    [-5.5, 8.9, 0.5],
+    [ 5.0, 7.9,-0.5]
+  ]
+  const starGeo = new THREE.OctahedronGeometry(0.17, 0)
+  const starMat = new THREE.MeshStandardMaterial({ color: '#FFD700', roughness: 0.12, metalness: 0.75 })
+  starPositionsList.forEach(([sx, sy, sz]) => {
+    const star = new THREE.Mesh(starGeo, starMat)
+    star.position.set(sx, sy, sz)
+    star.castShadow = true
+    scene.add(star)
+    floatingStars.push({ mesh: star, baseY: sy, phase: Math.random() * Math.PI * 2 })
+  })
+
+  // ==========================================
+  // CONFETTI — 500 pieces, 8 vivid colours
+  // ==========================================
   const confettiGeo = new THREE.PlaneGeometry(0.12, 0.12)
-  const confettiMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide })
-  confettiMesh = new THREE.InstancedMesh(confettiGeo, confettiMat, confettiCount)
-  
-  const colors = [new THREE.Color('#D4AF37'), new THREE.Color('#ED8936'), new THREE.Color('#FFB6C1'), new THREE.Color('#87CEFA'), new THREE.Color('#98FB98')]
+  confettiMesh = new THREE.InstancedMesh(confettiGeo, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }), confettiCount)
+  const confettiColorList = [
+    new THREE.Color('#D4AF37'), new THREE.Color('#ED8936'), new THREE.Color('#FFB6C1'),
+    new THREE.Color('#87CEFA'), new THREE.Color('#98FB98'), new THREE.Color('#FF6B9D'),
+    new THREE.Color('#DDA0DD'), new THREE.Color('#FF8C00')
+  ]
   const confettiData = []
-  
-  for(let i=0; i<confettiCount; i++) {
-    const x = (Math.random() - 0.5) * 20
-    const y = Math.random() * 12 + 2
-    const z = (Math.random() - 0.5) * 10 - 2
-    
+  for (let i = 0; i < confettiCount; i++) {
+    const x = (Math.random() - 0.5) * 22
+    const y = Math.random() * 14 + 2
+    const z = (Math.random() - 0.5) * 12 - 2
     dummy.position.set(x, y, z)
-    dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI)
+    dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI)
     dummy.updateMatrix()
     confettiMesh.setMatrixAt(i, dummy.matrix)
-    confettiMesh.setColorAt(i, colors[Math.floor(Math.random() * colors.length)])
-    
+    confettiMesh.setColorAt(i, confettiColorList[i % confettiColorList.length])
     confettiData.push({ x, y, z, rx: Math.random() * 0.1, ry: Math.random() * 0.1, speed: Math.random() * 0.05 + 0.02 })
   }
+  confettiMesh.instanceMatrix.needsUpdate = true
+  if (confettiMesh.instanceColor) confettiMesh.instanceColor.needsUpdate = true
   scene.add(confettiMesh)
 
+  // ==========================================
+  // CHARACTERS / AVATAR PIPELINE
+  // ==========================================
   const textureLoader = new THREE.TextureLoader()
+  const hatColours = ['#FF6B9D', '#FFB347', '#87CEEB', '#98FB98', '#DDA0DD']
 
   const createCharacter = (faceUrl, index) => {
     const group = new THREE.Group()
@@ -175,6 +425,39 @@ const initScene = () => {
     headMesh.position.z = 0.25
     headMesh.castShadow = true
     headGroup.add(headMesh)
+
+    // --- BIRTHDAY HATS ADDED & LOWERED ---
+    const hatH = 0.57
+    const hatR = 0.22
+    const hatBaseY = 0.38 // lowered from 0.5 to fit better over the head
+    
+    const hatGeo = new THREE.ConeGeometry(hatR, hatH, 16)
+    const hatMat = new THREE.MeshStandardMaterial({ color: hatColours[index % hatColours.length], roughness: 0.42 })
+    const hat = new THREE.Mesh(hatGeo, hatMat)
+    hat.position.y = hatBaseY + hatH / 2
+    headGroup.add(hat)
+
+    const bandGeo = new THREE.TorusGeometry(hatR + 0.01, 0.019, 8, 24)
+    const bandMat = new THREE.MeshStandardMaterial({ color: '#FFFFFF', roughness: 0.65 })
+    const band = new THREE.Mesh(bandGeo, bandMat)
+    band.rotation.x = -Math.PI / 2
+    band.position.y = hatBaseY
+    headGroup.add(band)
+
+    const stripeR = hatR * (1.0 - 0.43)
+    const stripeGeo = new THREE.TorusGeometry(stripeR, 0.014, 6, 20)
+    const stripeMat = new THREE.MeshStandardMaterial({ color: '#FFD700', roughness: 0.28, metalness: 0.6 })
+    const stripe = new THREE.Mesh(stripeGeo, stripeMat)
+    stripe.rotation.x = -Math.PI / 2
+    stripe.position.y = hatBaseY + hatH * 0.43
+    headGroup.add(stripe)
+
+    const pomGeo = new THREE.SphereGeometry(0.068, 12, 12)
+    const pomMat = new THREE.MeshStandardMaterial({ color: '#FFFFFF', roughness: 0.92 })
+    const pom = new THREE.Mesh(pomGeo, pomMat)
+    pom.position.y = hatBaseY + hatH + 0.065
+    headGroup.add(pom)
+    // -------------------------------------
 
     if (faceUrl) {
       const pipeline = processAvatar(faceUrl)
@@ -272,7 +555,9 @@ const initScene = () => {
     characters.push(createCharacter(face, i))
   })
 
-  // Pointer Interactions
+  // ==========================================
+  // POINTER INTERACTIONS
+  // ==========================================
   const onPointerDown = (e) => {
     isDragging = true
     isDraggingUI.value = true
@@ -282,8 +567,8 @@ const initScene = () => {
     if (!isDragging) return
     const x = e.clientX || e.touches?.[0].clientX
     const delta = x - previousX
-    targetAngle -= delta * 0.008 
-    targetAngle = Math.max(-Math.PI/1.5, Math.min(Math.PI/1.5, targetAngle))
+    targetAngle -= delta * 0.008
+    targetAngle = Math.max(-Math.PI / 1.5, Math.min(Math.PI / 1.5, targetAngle))
     previousX = x
   }
   const onPointerUp = () => { 
@@ -304,12 +589,13 @@ const initScene = () => {
   }
   window.addEventListener('resize', onWindowResize)
 
-  const clock = new THREE.Clock()
-
+  // ==========================================
+  // ANIMATION LOOP
+  // ==========================================
   const animate = () => {
     animationId = requestAnimationFrame(animate)
     const t = clock.getElapsedTime()
-    
+
     // Orbital camera blending
     if (!isDragging) {
       targetAngle += Math.sin(t * 0.5) * 0.0008
@@ -319,17 +605,24 @@ const initScene = () => {
     camera.position.z = Math.cos(currentAngle) * 16
     camera.lookAt(0, 1.5, 0)
 
-    // Cake flicker
-    if (activeCake) {
-      activeCake.scale.set(1 + Math.sin(t*15)*0.1, 1 + Math.sin(t*25)*0.1, 1 + Math.sin(t*15)*0.1)
-    }
-    
+    // All candle flames flicker independently
+    activeFlames.forEach((flame, i) => {
+      const f = 1 + Math.sin(t * 16 + i * 0.82) * 0.10 + Math.sin(t * 31 + i * 1.5) * 0.05
+      flame.scale.set(f * 0.88, f, f * 0.88)
+    })
+
+    // Candle point lights flicker
+    activeCandleLights.forEach((light, i) => {
+      light.intensity = 13 + Math.sin(t * 23 + i * 2.1) * 5
+    })
+
+    // Confetti rain
     if (confettiMesh) {
-      for(let i=0; i<confettiCount; i++) {
+      for (let i = 0; i < confettiCount; i++) {
         const d = confettiData[i]
         d.y -= d.speed
         d.x += Math.sin(t + i) * 0.01
-        if(d.y < 0) d.y = 12
+        if (d.y < 0) d.y = 14
         dummy.position.set(d.x, d.y, d.z)
         dummy.rotation.x += d.rx
         dummy.rotation.y += d.ry
@@ -339,9 +632,23 @@ const initScene = () => {
       confettiMesh.instanceMatrix.needsUpdate = true
     }
 
+    // Balloons: gentle float and sway
+    balloons.forEach(b => {
+      b.group.position.y = b.baseY + Math.sin(t * b.speed + b.phase) * 0.38
+      b.group.rotation.z = Math.sin(t * b.speed * 0.65 + b.phase) * 0.065
+    })
+
+    // Gold stars: spin and drift
+    floatingStars.forEach(s => {
+      s.mesh.rotation.y += 0.022
+      s.mesh.rotation.x += 0.011
+      s.mesh.position.y = s.baseY + Math.sin(t * 0.76 + s.phase) * 0.26
+    })
+
+    // Characters
     characters.forEach((char) => {
       char.mesh.position.lerp(char.targetPos, 0.03)
-      char.headGroup.lookAt(camera.position) // Faces always track camera orbit
+      char.headGroup.lookAt(camera.position)
 
       if (char.isBirthdayPerson) {
         char.mesh.position.y = Math.abs(Math.sin(t * 4)) * 0.6
