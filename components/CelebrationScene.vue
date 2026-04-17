@@ -26,7 +26,6 @@ const initScene = () => {
 
   canvasContainer.value.innerHTML = '<div class="hero-gradient-overlay"></div>'
   
-  // Clean up any reactive watchers from the previous scene instance
   activeUnwatchers.forEach(unwatch => unwatch())
   activeUnwatchers.length = 0
 
@@ -114,8 +113,21 @@ const initScene = () => {
     body.castShadow = true
     group.add(body)
 
-    // Billboard Sprite-like Face
-    const headGeo = new THREE.PlaneGeometry(1.2, 1.2)
+    // Estructura Jerárquica del Cráneo Paramétrico
+    const headGroup = new THREE.Group()
+    headGroup.position.y = 1.7
+    group.add(headGroup)
+
+    // Shell Trasero (Cráneo base predeterminado, refinado más tarde)
+    const shellGeo = new THREE.CapsuleGeometry(0.45, 0.3, 4, 16)
+    const shellMat = new THREE.MeshStandardMaterial({ color: '#FDFBF7', roughness: 0.6 })
+    const shellMesh = new THREE.Mesh(shellGeo, shellMat)
+    shellMesh.position.z = -0.1
+    shellMesh.castShadow = true
+    headGroup.add(shellMesh)
+
+    // Superficie Facial Inicial (Forma plana provisional)
+    let headGeo = new THREE.PlaneGeometry(1.0, 1.0, 16, 16)
     const headMat = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       side: THREE.DoubleSide,
@@ -124,17 +136,14 @@ const initScene = () => {
       depthWrite: true, 
       roughness: 0.6
     })
-    
-    const head = new THREE.Mesh(headGeo, headMat)
-    head.position.y = 1.7
-    head.castShadow = true
-    group.add(head)
+    const headMesh = new THREE.Mesh(headGeo, headMat)
+    headMesh.position.z = 0.25
+    headMesh.castShadow = true
+    headGroup.add(headMesh)
 
-    // Fetch and bind to the reactive Vision API pipeline
     if (faceUrl) {
       const pipeline = processAvatar(faceUrl)
 
-      // 1. Instant rendering of the fallback or cached original
       if (pipeline.displaySrc) {
         textureLoader.load(pipeline.displaySrc, (tex) => {
           tex.colorSpace = THREE.SRGBColorSpace
@@ -143,26 +152,69 @@ const initScene = () => {
         })
       }
 
-      // 2. Subscribe to reactive changes for progressive swap
-      const unwatch = watch(() => pipeline.processedSrc, (newSrc) => {
+      const unwatchTex = watch(() => pipeline.processedSrc, (newSrc) => {
         if (newSrc && newSrc !== headMat.map?.image?.src) {
-          console.log(`[DEBUG-HHB] Escena 3D - Reemplazando textura procesada asíncronamente`)
           textureLoader.load(newSrc, (newTex) => {
             newTex.colorSpace = THREE.SRGBColorSpace
             const oldTex = headMat.map
             headMat.map = newTex
             headMat.needsUpdate = true
             
-            // Clean up old memory to prevent texture leaks
             if (oldTex) oldTex.dispose()
 
-            // Trigger a joyful scale bounce animation
             animState.isSwapping = true
             animState.swapTime = clock.getElapsedTime()
           })
         }
       })
-      activeUnwatchers.push(unwatch)
+      activeUnwatchers.push(unwatchTex)
+
+      // Variación determinista paramétrica del rostro usando los puntos anatómicos mapeados por la Vision API
+      const unwatchMeta = watch(() => pipeline.meta, (meta) => {
+        if (meta && meta.cropBox) {
+          const cw = meta.cropBox.xMax - meta.cropBox.xMin
+          const ch = meta.cropBox.yMax - meta.cropBox.yMin
+          const aspect = cw / ch
+
+          const h = 1.1
+          const w = h * aspect
+
+          // Curvar la malla plana nativamente manipulando sus vértices a través del eje Z
+          const newGeo = new THREE.PlaneGeometry(w, h, 16, 16)
+          const pos = newGeo.attributes.position
+          const curveDepth = w * 0.28 // Sensación de profundidad de la mejilla 
+
+          for (let i = 0; i < pos.count; i++) {
+            const x = pos.getX(i)
+            const nx = x / (w / 2) // Valor normalizado -1 a 1
+            const z = (Math.cos(nx * Math.PI / 2) - 1) * curveDepth
+            pos.setZ(i, z)
+          }
+          newGeo.computeVertexNormals()
+
+          if (headMesh.geometry) headMesh.geometry.dispose()
+          headMesh.geometry = newGeo
+
+          // Escalar y desplazar orgánicamente la masa craneal conectada (el shell)
+          shellMesh.scale.set(w * 0.8, h * 0.8, w * 0.6)
+
+          if (meta.eyeBoxes && meta.eyeBoxes.leftEye && meta.eyeBoxes.rightEye) {
+            // Ancho craneal correlacionado directamente con la distancia inter-ocular
+            const eyeDist = Math.abs(meta.eyeBoxes.rightEye.x - meta.eyeBoxes.leftEye.x)
+            const eyeRatio = eyeDist / cw
+            shellMesh.scale.x *= (1.0 + (eyeRatio - 0.25) * 1.5)
+
+            // Balance proporcional de frente y mentón
+            if (meta.faceBox) {
+              const faceCenterY = (meta.faceBox.yMin + meta.faceBox.yMax) / 2
+              const cropCenterY = (meta.cropBox.yMin + meta.cropBox.yMax) / 2
+              const yOffset = cropCenterY - faceCenterY
+              shellMesh.position.y = yOffset * 0.8
+            }
+          }
+        }
+      }, { immediate: true })
+      activeUnwatchers.push(unwatchMeta)
     }
 
     if (index === 1) {
@@ -200,7 +252,7 @@ const initScene = () => {
     scene.add(group)
     return { 
       mesh: group, 
-      headMesh: head,
+      headGroup,
       targetPos,
       isBirthdayPerson: index === 0,
       timeOffset: Math.random() * 100,
@@ -245,7 +297,8 @@ const initScene = () => {
 
     characters.forEach((char) => {
       char.mesh.position.lerp(char.targetPos, 0.03)
-      char.headMesh.lookAt(camera.position)
+      // Ajuste para orientar toda la agrupación craneal integralmente a cámara
+      char.headGroup.lookAt(camera.position)
 
       if (char.isBirthdayPerson) {
         char.mesh.position.y = Math.abs(Math.sin(t * 4)) * 0.6
@@ -255,14 +308,13 @@ const initScene = () => {
         char.mesh.lookAt(0, char.mesh.position.y, 2.5)
       }
 
-      // Execute subtle animated bounce when reactive texture swap triggers
       if (char.animState.isSwapping) {
         const elapsed = t - char.animState.swapTime
         if (elapsed < 0.3) {
           const bounce = 1 + Math.sin(elapsed * Math.PI / 0.3) * 0.15
-          char.headMesh.scale.set(bounce, bounce, bounce)
+          char.headGroup.scale.set(bounce, bounce, bounce)
         } else {
-          char.headMesh.scale.set(1, 1, 1)
+          char.headGroup.scale.set(1, 1, 1)
           char.animState.isSwapping = false
         }
       }
