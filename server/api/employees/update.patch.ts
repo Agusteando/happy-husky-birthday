@@ -7,12 +7,25 @@ export default defineEventHandler(async (event) => {
   // Update External API if strictly allowed fields are present
   if (evaId !== undefined || pathId !== undefined || ingressioId !== undefined || noiId !== undefined) {
     try {
-      await $fetch('https://signia.casitaapps.com/api/export/employees/update', {
+      const matchPayload = email ? { email } : { id };
+      console.log(`[DEBUG-HHB] API Update - Sending PATCH to Signia for match:`, matchPayload);
+      
+      const requestBody = {
+        match: matchPayload,
+        ...(evaId !== undefined && { evaId }),
+        ...(pathId !== undefined && { pathId }),
+        ...(ingressioId !== undefined && { ingressioId }),
+        ...(noiId !== undefined && { noiId })
+      };
+      
+      const response = await $fetch('https://signia.casitaapps.com/api/export/employees/update', {
         method: 'PATCH',
-        body: { match: { id }, evaId, pathId, ingressioId, noiId }
-      })
+        body: requestBody
+      });
+      
+      console.log(`[DEBUG-HHB] API Update - Signia response:`, response);
     } catch (e) {
-      console.error('Signia API patch failed', e)
+      console.error('[DEBUG-HHB] API Update - Signia PATCH failed:', e)
     }
   }
 

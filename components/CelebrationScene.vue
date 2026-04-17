@@ -7,26 +7,30 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import * as THREE from 'three'
+import { usePremiumAvatar } from '~/composables/usePremiumAvatar'
 
 const props = defineProps({ faces: { type: Array, default: () => [] } })
 const canvasContainer = ref(null)
 
 let scene, camera, renderer, animationId
 const characters = []
+let confettiMesh = null
+const confettiCount = 350
+const dummy = new THREE.Object3D()
+
+const { processAvatar } = usePremiumAvatar()
 
 const initScene = () => {
   if (!canvasContainer.value) return
 
-  // Clean up if re-initializing
   canvasContainer.value.innerHTML = '<div class="hero-gradient-overlay"></div>'
 
   scene = new THREE.Scene()
-  // Soft, airy environment
   scene.background = new THREE.Color('#FAF9F6')
-  scene.fog = new THREE.FogExp2('#FAF9F6', 0.04)
+  scene.fog = new THREE.FogExp2('#FAF9F6', 0.05)
 
   camera = new THREE.PerspectiveCamera(35, window.innerWidth / 400, 0.1, 100)
-  camera.position.set(0, 3.5, 14)
+  camera.position.set(0, 4, 16)
   camera.lookAt(0, 1.5, 0)
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
@@ -36,44 +40,66 @@ const initScene = () => {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
   canvasContainer.value.appendChild(renderer.domElement)
 
-  // Soft Studio Floor
-  const floorGeo = new THREE.PlaneGeometry(50, 50)
+  // Stage Floor
+  const floorGeo = new THREE.PlaneGeometry(60, 60)
   const floorMat = new THREE.MeshStandardMaterial({ 
-    color: '#FFFFFF',
-    roughness: 0.9,
-    metalness: 0.1
+    color: '#FFFFFF', roughness: 0.8, metalness: 0.1 
   })
   const floor = new THREE.Mesh(floorGeo, floorMat)
   floor.rotation.x = -Math.PI / 2
   floor.receiveShadow = true
   scene.add(floor)
 
-  // Cinematic Soft Lighting
-  const ambientLight = new THREE.AmbientLight('#ffffff', 1.2)
+  // Lighting
+  const ambientLight = new THREE.AmbientLight('#ffffff', 1.4)
   scene.add(ambientLight)
 
-  const spotLight = new THREE.SpotLight('#FFF8E7', 120)
-  spotLight.position.set(2, 10, 4)
-  spotLight.angle = Math.PI / 5
+  const spotLight = new THREE.SpotLight('#FFF8E7', 150)
+  spotLight.position.set(2, 12, 6)
+  spotLight.angle = Math.PI / 4
   spotLight.penumbra = 0.8
   spotLight.castShadow = true
-  spotLight.shadow.bias = -0.0001
+  spotLight.shadow.bias = -0.0005
   scene.add(spotLight)
-  
-  const fillLight = new THREE.PointLight('#E2E8F0', 60, 20)
-  fillLight.position.set(-6, 4, -2)
+
+  const fillLight = new THREE.PointLight('#E2E8F0', 80, 20)
+  fillLight.position.set(-6, 5, -2)
   scene.add(fillLight)
 
-  const textureLoader = new THREE.TextureLoader()
-  const loadTexture = (url) => {
-    if (!url) return null
-    return textureLoader.load(url, undefined, undefined, () => null)
+  // High-fidelity Confetti (Instanced Mesh for tumbling paper effect)
+  const confettiGeo = new THREE.PlaneGeometry(0.12, 0.12)
+  const confettiMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+  confettiMesh = new THREE.InstancedMesh(confettiGeo, confettiMat, confettiCount)
+  
+  const colors = [new THREE.Color('#D4AF37'), new THREE.Color('#ED8936'), new THREE.Color('#48BB78'), new THREE.Color('#4299E1'), new THREE.Color('#F56565')]
+  const confettiData = []
+  
+  for(let i=0; i<confettiCount; i++) {
+    const x = (Math.random() - 0.5) * 20
+    const y = Math.random() * 12 + 2
+    const z = (Math.random() - 0.5) * 10 - 2
+    
+    dummy.position.set(x, y, z)
+    dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI)
+    dummy.updateMatrix()
+    confettiMesh.setMatrixAt(i, dummy.matrix)
+    confettiMesh.setColorAt(i, colors[Math.floor(Math.random() * colors.length)])
+    
+    confettiData.push({
+      x, y, z,
+      rx: Math.random() * 0.1,
+      ry: Math.random() * 0.1,
+      speed: Math.random() * 0.05 + 0.02
+    })
   }
+  scene.add(confettiMesh)
+
+  const textureLoader = new THREE.TextureLoader()
 
   const createCharacter = (faceUrl, index) => {
     const group = new THREE.Group()
 
-    // Soft pastel bodies
+    // Soft 3D bodies
     const bodyGeo = new THREE.CapsuleGeometry(0.35, 0.5, 4, 16)
     const colorOpts = ['#F6E05E', '#9AE6B4', '#FBD38D', '#E2E8F0', '#BEE3F8']
     const bodyMat = new THREE.MeshStandardMaterial({ color: colorOpts[index % colorOpts.length], roughness: 0.8 })
@@ -82,69 +108,80 @@ const initScene = () => {
     body.castShadow = true
     group.add(body)
 
-    // Head
-    const headGeo = new THREE.BoxGeometry(0.65, 0.65, 0.65)
-    const materials = Array(6).fill(new THREE.MeshStandardMaterial({ color: '#FFEDD5', roughness: 0.6 }))
+    // Billboard Sprite-like Face (Awaits PremiumAvatar)
+    console.log('[DEBUG-HHB] Three.js - Face material initialized with transparent: true, alphaTest removed for soft masking.');
+    const headGeo = new THREE.PlaneGeometry(1.2, 1.2)
+    const headMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      roughness: 0.6
+    })
     
-    if (faceUrl) {
-      const faceTex = loadTexture(faceUrl)
-      if (faceTex) {
-        faceTex.colorSpace = THREE.SRGBColorSpace
-        materials[4] = new THREE.MeshBasicMaterial({ map: faceTex })
-      }
-    }
-    const head = new THREE.Mesh(headGeo, materials)
-    head.position.y = 1.6
+    const head = new THREE.Mesh(headGeo, headMat)
+    head.position.y = 1.7
     head.castShadow = true
     group.add(head)
 
-    // Festive elements
-    if (index === 2 || index === 4) {
-      const hatGeo = new THREE.ConeGeometry(0.35, 0.7, 16)
-      const hatMat = new THREE.MeshStandardMaterial({ color: '#ED8936', roughness: 0.5 })
-      const hat = new THREE.Mesh(hatGeo, hatMat)
-      hat.position.y = 2.25
-      hat.castShadow = true
-      group.add(hat)
+    // Asynchronously fetch and apply the PremiumAvatar cropped base64
+    if (faceUrl) {
+      processAvatar(faceUrl).then(base64 => {
+        textureLoader.load(base64, (tex) => {
+          tex.colorSpace = THREE.SRGBColorSpace
+          headMat.map = tex
+          headMat.needsUpdate = true
+        })
+      })
     }
 
-    // Playful Narrative: Character 0 carries a gift
-    if (index === 0) {
+    // Explicit 3D Gift Box
+    if (index === 1) {
       const giftGroup = new THREE.Group()
-      const giftGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4)
-      const giftMat = new THREE.MeshStandardMaterial({ color: '#FC8181' })
-      const gift = new THREE.Mesh(giftGeo, giftMat)
-      gift.castShadow = true
       
-      const ribbonGeo = new THREE.BoxGeometry(0.42, 0.06, 0.42)
-      const ribbonMat = new THREE.MeshStandardMaterial({ color: '#FAF089' })
-      const ribbon = new THREE.Mesh(ribbonGeo, ribbonMat)
-      gift.add(ribbon)
+      const boxMat = new THREE.MeshStandardMaterial({ color: '#FC8181', roughness: 0.4 })
+      const box = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), boxMat)
+      box.castShadow = true
+      giftGroup.add(box)
       
-      giftGroup.add(gift)
-      giftGroup.position.set(0, 0.9, 0.5)
+      const ribbonMat = new THREE.MeshStandardMaterial({ color: '#FAF089', metalness: 0.6, roughness: 0.2 })
+      const r1 = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.05, 0.52), ribbonMat)
+      const r2 = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.52, 0.05), ribbonMat)
+      const r3 = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.52, 0.52), ribbonMat)
+      giftGroup.add(r1, r2, r3)
+      
+      const bow = new THREE.Mesh(new THREE.TorusKnotGeometry(0.08, 0.02, 64, 8), ribbonMat)
+      bow.position.y = 0.28
+      giftGroup.add(bow)
+      
+      giftGroup.position.set(0, 0.8, 0.45)
       group.add(giftGroup)
     }
 
-    // Positions (semi-circle facing forward)
-    const angle = (index / 4) * Math.PI - (Math.PI / 2)
-    const radius = 3.5
-    group.position.x = Math.cos(angle) * radius
-    group.position.z = Math.sin(angle) * radius - 2
+    // Story AI target positioning
+    const targetPos = new THREE.Vector3()
+    if (index === 0) {
+      // Birthday person center
+      targetPos.set(0, 0, 2.5)
+    } else {
+      // Friends forming a semicircle facing the birthday person
+      const angle = ((index - 1) / 3) * Math.PI + Math.PI/4
+      targetPos.set(Math.cos(angle) * 3, 0, Math.sin(angle) * 1.5 + 2.5)
+    }
     
-    // Everyone looks towards a central focal point
-    group.lookAt(0, group.position.y, 4)
+    // Initial position far away to allow entrance walk
+    group.position.set(targetPos.x + (Math.random()-0.5)*10, 0, targetPos.z - 6)
 
     scene.add(group)
     return { 
       mesh: group, 
-      baseX: group.position.x, 
-      baseZ: group.position.z,
+      headMesh: head,
+      targetPos,
+      isBirthdayPerson: index === 0,
       timeOffset: Math.random() * 100 
     }
   }
 
-  const facesToUse = props.faces.length > 0 ? props.faces : Array(5).fill('/main.png')
+  const facesToUse = props.faces.length > 0 ? props.faces : Array(5).fill(null)
   facesToUse.slice(0, 5).forEach((face, i) => {
     characters.push(createCharacter(face, i))
   })
@@ -163,21 +200,43 @@ const initScene = () => {
     animationId = requestAnimationFrame(animate)
     const t = clock.getElapsedTime()
     
-    characters.forEach((char, idx) => {
-      // Gentle floating / breathing animation
-      char.mesh.position.y = Math.sin(t * 2 + char.timeOffset) * 0.05
+    // Confetti Animation (Tumbling)
+    if (confettiMesh) {
+      for(let i=0; i<confettiCount; i++) {
+        const d = confettiData[i]
+        d.y -= d.speed
+        d.x += Math.sin(t + i) * 0.01
+        if(d.y < 0) d.y = 12
+        
+        dummy.position.set(d.x, d.y, d.z)
+        dummy.rotation.x += d.rx
+        dummy.rotation.y += d.ry
+        dummy.updateMatrix()
+        confettiMesh.setMatrixAt(i, dummy.matrix)
+      }
+      confettiMesh.instanceMatrix.needsUpdate = true
+    }
+
+    // NPC Animation (Story-Driven)
+    characters.forEach((char) => {
+      char.mesh.position.lerp(char.targetPos, 0.03) // Smooth walk in
       
-      // Character 0 (with gift) walks slightly forward and back
-      if (idx === 0) {
-        char.mesh.position.z = char.baseZ + Math.sin(t * 1.5) * 0.5
+      // Billboard faces always look at camera
+      char.headMesh.lookAt(camera.position)
+
+      if (char.isBirthdayPerson) {
+        // Joyful jumping and spinning
+        char.mesh.position.y = Math.abs(Math.sin(t * 4)) * 0.6
+        char.mesh.rotation.y = Math.sin(t * 2) * 0.3
       } else {
-        // Others subtly sway
-        char.mesh.rotation.y = Math.sin(t + char.timeOffset) * 0.1
+        // Walking bounce & facing birthday person (0,0,2.5)
+        char.mesh.position.y = Math.abs(Math.sin(t * 6 + char.timeOffset)) * 0.1
+        char.mesh.lookAt(0, char.mesh.position.y, 2.5)
       }
     })
 
     // Cinematic subtle camera drift
-    camera.position.x = Math.sin(t * 0.2) * 1.5
+    camera.position.x = Math.sin(t * 0.15) * 2
     camera.lookAt(0, 1.5, 0)
 
     renderer.render(scene, camera)

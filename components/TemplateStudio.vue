@@ -2,12 +2,11 @@
   <div class="studio-overlay" @click.self="emit('close')">
     <div class="studio-modal">
       <div class="studio-header">
-        <h2>Estudio Creativo - {{ employee.name }}</h2>
+        <h2>Estudio de diseño - {{ employee.name }}</h2>
         <button class="close-btn" @click="emit('close')">✖</button>
       </div>
 
       <div class="studio-content">
-        <!-- Preview Panel -->
         <div class="preview-panel">
           <div class="canvas-wrapper">
             <img 
@@ -16,7 +15,7 @@
               class="template-bg" 
               :style="{ objectPosition: `${cropX}% ${cropY}%` }" 
             />
-            <div v-else class="empty-canvas">Sube una base de diseño</div>
+            <div v-else class="empty-canvas">Sube una plantilla base</div>
             
             <div class="canvas-overlay">
               <h1 class="canvas-name">{{ employee.name }}</h1>
@@ -36,19 +35,18 @@
           </div>
         </div>
 
-        <!-- Toolbar Panel -->
         <div class="tools-panel">
           <div class="tool-section">
-            <h3>Fondo de Plantilla</h3>
-            <p class="help-text">Sube el diseño base de celebración.</p>
+            <h3>Fondo de plantilla</h3>
+            <p class="help-text">Selecciona la plantilla base para la felicitación.</p>
             <input type="file" accept="image/*" @change="handleFileUpload" class="file-input" />
           </div>
 
           <div class="tool-section">
-            <h3>Añadir Mensaje</h3>
-            <input v-model="newAuthor" placeholder="Tu Nombre" class="full-width mb-2" />
-            <textarea v-model="newMessage" placeholder="Escribe un mensaje mágico..." rows="3" class="full-width"></textarea>
-            <button class="btn-primary mt-2" @click="addMessage">Guardar Mensaje</button>
+            <h3>Añadir mensaje</h3>
+            <input v-model="newAuthor" placeholder="Tu nombre" class="full-width mb-2" />
+            <textarea v-model="newMessage" placeholder="Escribe un mensaje de felicitación..." rows="3" class="full-width"></textarea>
+            <button class="btn-primary mt-2" @click="addMessage">Guardar mensaje</button>
           </div>
         </div>
       </div>

@@ -7,12 +7,12 @@
     
     <div class="login-card glass-panel">
       <div class="logos">
-        <img src="/main.png" alt="IECS IEDIS Institucional" class="login-logo" />
         <img src="/hhb.png" alt="Happy Husky Birthday" class="login-hhb" />
+        <img src="/main.png" alt="IECS IEDIS Institucional" class="login-logo" />
       </div>
       
-      <h2>Estudio de Celebraciones</h2>
-      <p>Inicia sesión con tu cuenta institucional para ingresar al directorio mágico del equipo.</p>
+      <h2>Acceso al sistema</h2>
+      <p>Inicia sesión con tu cuenta institucional para organizar las celebraciones del equipo.</p>
       
       <div class="auth-wrapper">
         <div id="google-btn" class="google-btn-container"></div>
@@ -102,9 +102,9 @@ onMounted(() => {
   position: relative; z-index: 1;
 }
 
-.logos { display: flex; flex-direction: column; align-items: center; gap: 20px; }
-.login-logo { height: 50px; object-fit: contain; }
-.login-hhb { height: 75px; filter: drop-shadow(0 4px 10px rgba(212,175,55,0.2)); }
+.logos { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.login-hhb { height: 110px; filter: drop-shadow(0 6px 20px rgba(212,175,55,0.4)); }
+.login-logo { height: 35px; object-fit: contain; opacity: 0.8; }
 
 h2 { margin: 0; color: var(--primary-navy); font-weight: 800; font-size: 1.8rem; letter-spacing: -0.02em; }
 p { color: var(--text-secondary); margin: 0; font-size: 1rem; line-height: 1.5; font-weight: 500;}

@@ -11,7 +11,6 @@ export const pool = mysql.createPool({
   queueLimit: 0
 })
 
-// Initialize core tables
 pool.query(`
   CREATE TABLE IF NOT EXISTS overrides (
     id VARCHAR(255) PRIMARY KEY,
@@ -37,7 +36,6 @@ pool.query(`
   )
 `).catch(console.error)
 
-// Initialize new Template Studio tables
 pool.query(`
   CREATE TABLE IF NOT EXISTS templates (
     id VARCHAR(255) PRIMARY KEY COMMENT 'Linked directly to employee_id',

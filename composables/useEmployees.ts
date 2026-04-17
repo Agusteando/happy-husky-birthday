@@ -23,11 +23,17 @@ export const useEmployees = () => {
       return
     }
     loading.value = true
+    console.log(`[DEBUG-HHB] Client Fetch - Requesting employees for UI plantel: "${plantel}"`);
     try {
-      const data: any = await $fetch(`/api/employees?plantel=${encodeURIComponent(plantel)}`)
+      const fetchUrl = `/api/employees?plantel=${encodeURIComponent(plantel)}`;
+      console.log(`[DEBUG-HHB] Client Fetch - URL: ${fetchUrl}`);
+      
+      const data: any = await $fetch(fetchUrl);
+      console.log(`[DEBUG-HHB] Client Fetch - Received ${data?.length || 0} employees.`);
+      
       employees.value = data
     } catch (e) {
-      console.error(e)
+      console.error('[DEBUG-HHB] Client Fetch - Error:', e)
     } finally {
       loading.value = false
     }

@@ -5,26 +5,24 @@
       
       <header class="header-glass">
         <div class="header-inner">
-          <div class="logo-area">
-            <img src="/main.png" alt="IECS Logo" class="logo-main" />
-            <div class="divider"></div>
-            <img src="/hhb.png" alt="Happy Husky Birthday" class="logo-hhb" />
+          <div class="logo-area center-brand">
+            <img src="/hhb.png" alt="Happy Husky Birthday" class="logo-hhb-massive" />
+            <div class="institutional-badge">
+              <img src="/main.png" alt="IECS Logo" class="logo-main-small" />
+            </div>
           </div>
           <div class="header-right">
-            <button class="logout-btn" @click="logout" title="Cerrar Sesión">
-              Cerrar Sesión
+            <button class="logout-btn" @click="logout" title="Cerrar sesión">
+              Cerrar sesión
             </button>
           </div>
         </div>
       </header>
 
       <div class="hero-content">
-        <h1 class="hero-title">Directorio de Celebraciones</h1>
-        <p class="hero-subtitle">Selecciona una sede para explorar el talento y organizar sus celebraciones mágicas.</p>
-        
         <div class="main-selector-glass">
           <select v-model="filterPlantel" class="premium-select hero-select">
-            <option value="" disabled>Elige una sede...</option>
+            <option value="" disabled>Elige una sede para comenzar...</option>
             <option value="Primaria Metepec">Primaria Metepec</option>
             <option value="Primaria Toluca">Primaria Toluca</option>
             <option value="Secundaria Metepec">Secundaria Metepec</option>
@@ -45,7 +43,7 @@
 
       <div class="controls-bar glass-panel">
         <div class="filters">
-          <input type="text" v-model="filterSearch" placeholder="Buscar por nombre..." class="search-input" />
+          <input type="text" v-model="filterSearch" placeholder="Buscar talento por nombre..." class="search-input" />
         </div>
         <div class="actions">
           <button class="btn btn-secondary" @click="exportExcel">
@@ -59,7 +57,7 @@
 
       <div v-if="loading" class="loading-state glass-panel">
         <div class="spinner"></div>
-        <p>Iluminando el escenario para {{ filterPlantel }}...</p>
+        <p>Cargando el directorio de {{ filterPlantel }}...</p>
       </div>
       
       <EmployeeTable 
@@ -98,7 +96,6 @@
       </div>
     </div>
 
-    <!-- Template Studio Modal -->
     <TemplateStudio 
       v-if="studioEmployee" 
       :employee="studioEmployee" 
@@ -178,16 +175,41 @@ const logout = async () => {
 .header-inner {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   max-width: 1400px;
   margin: 0 auto;
   pointer-events: auto;
 }
 
-.logo-area { display: flex; align-items: center; gap: 24px; }
-.logo-main { height: 45px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
-.divider { width: 1px; height: 35px; background: rgba(0,0,0,0.1); }
-.logo-hhb { height: 50px; filter: drop-shadow(0 0 12px rgba(212, 175, 55, 0.3)); }
+.logo-area.center-brand { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: flex-start; 
+  gap: 8px; 
+}
+
+.logo-hhb-massive { 
+  height: 180px; 
+  filter: drop-shadow(0 15px 25px rgba(212, 175, 55, 0.5)); 
+  transform: translateY(-15px);
+}
+
+.institutional-badge {
+  background: rgba(255,255,255,0.95);
+  padding: 6px 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.logo-main-small { 
+  height: 28px; 
+  opacity: 0.95;
+}
+
+.header-right {
+  margin-top: 10px;
+}
 
 .logout-btn {
   background: white;
@@ -203,36 +225,19 @@ const logout = async () => {
 .hero-content {
   position: relative;
   z-index: 10;
-  margin: auto;
+  margin: auto auto 40px auto;
   text-align: center;
   pointer-events: none;
   padding: 0 20px;
 }
 
-.hero-title {
-  font-size: 3rem;
-  font-weight: 800;
-  color: var(--primary-navy);
-  margin: 0 0 8px 0;
-  text-shadow: 0 2px 10px rgba(255,255,255,0.8);
-}
-
-.hero-subtitle {
-  font-size: 1.1rem;
-  color: var(--text-secondary);
-  max-width: 600px;
-  margin: 0 auto 32px auto;
-  font-weight: 500;
-  text-shadow: 0 1px 4px rgba(255,255,255,0.8);
-}
-
 .main-selector-glass {
   display: inline-block;
   pointer-events: auto;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
   padding: 8px;
-  border-radius: 20px;
+  border-radius: 30px;
   box-shadow: 0 15px 35px rgba(0,0,0,0.1);
   border: 1px solid rgba(255,255,255,1);
 }
@@ -240,10 +245,10 @@ const logout = async () => {
 .hero-select {
   border: none;
   background: transparent;
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1.15rem;
+  font-weight: 700;
   color: var(--primary-navy);
-  padding: 12px 40px 12px 20px;
+  padding: 12px 40px 12px 24px;
   cursor: pointer;
   box-shadow: none !important;
   outline: none;
@@ -272,7 +277,7 @@ const logout = async () => {
 
 .filters, .actions { display: flex; gap: 16px; align-items: center; flex-wrap: wrap;}
 
-.search-input { min-width: 300px; }
+.search-input { min-width: 300px; border-radius: 20px; }
 
 .btn {
   display: flex; align-items: center; gap: 8px;

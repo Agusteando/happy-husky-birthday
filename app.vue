@@ -6,21 +6,23 @@
 
 <style>
 :root {
-  --primary-navy: #0B132B;
-  --primary-slate: #1C2541;
+  /* Soft Premium Palette */
+  --primary-navy: #2D3748;
+  --primary-slate: #4A5568;
   --secondary-gold: #D4AF37;
-  --accent-amber: #F59E0B;
-  --bg-color: #F8FAFC;
+  --accent-amber: #ED8936;
+  --bg-color: #FAF9F6;
   --surface-color: #FFFFFF;
-  --text-primary: #1E293B;
-  --text-secondary: #64748B;
+  --text-primary: #1A202C;
+  --text-secondary: #718096;
   --border-color: #E2E8F0;
-  --success: #10B981;
-  --danger: #EF4444;
-  --radius-sm: 8px;
-  --radius-lg: 16px;
-  --shadow-subtle: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  --shadow-glow: 0 0 15px rgba(212, 175, 55, 0.3);
+  --success: #48BB78;
+  --danger: #F56565;
+  --radius-sm: 12px;
+  --radius-lg: 24px;
+  --shadow-subtle: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
+  --shadow-hover: 0 20px 50px -15px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 0 20px rgba(212, 175, 55, 0.2);
 }
 
 body {
@@ -46,22 +48,22 @@ button {
   font-family: inherit;
 }
 
-input, select {
+input, select, textarea {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
-  padding: 10px 14px;
+  padding: 12px 16px;
   font-size: 14px;
   font-family: inherit;
-  transition: border-color 0.2s ease;
+  transition: all 0.2s ease;
   outline: none;
+  background-color: var(--surface-color);
 }
 
-input:focus, select:focus {
+input:focus, select:focus, textarea:focus {
   border-color: var(--secondary-gold);
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
 }
 
-/* Scrollbar styling for elegance */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -75,5 +77,12 @@ input:focus, select:focus {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: var(--shadow-subtle);
 }
 </style>

@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
   const { token } = await readBody(event)
   const config = useRuntimeConfig()
   const clientId = config.public.googleClientId || process.env.GOOGLE_CLIENT_ID
-  const secret = process.env.GOOGLE_CLIENT_ID || 'hhb_secret_key' // Fallback for signing
+  const secret = process.env.GOOGLE_CLIENT_ID || 'hhb_secret_key'
   
   const client = new OAuth2Client(clientId)
   
@@ -16,7 +16,6 @@ export default defineEventHandler(async (event) => {
     })
     const payload = ticket.getPayload()
     
-    // Create a robust, signed session token instead of irreversible bcrypt
     const sessionData = JSON.stringify({ sub: payload!.sub, email: payload!.email, name: payload!.name })
     const hmac = crypto.createHmac('sha256', secret)
     hmac.update(sessionData)

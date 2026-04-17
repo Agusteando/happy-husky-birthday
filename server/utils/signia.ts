@@ -1,6 +1,23 @@
 export const fetchSigniaEmployees = async () => {
-  const data: any = await $fetch('https://signia.casitaapps.com/api/export/employees?isActive=true').catch(() => [])
-  return data
+  const url = 'https://signia.casitaapps.com/api/export/employees?isActive=true';
+  console.log(`[DEBUG-HHB] Signia API - Fetching URL: ${url}`);
+  try {
+    const response = await fetch(url);
+    console.log(`[DEBUG-HHB] Signia API - Response Status: ${response.status}`);
+    
+    if (!response.ok) {
+      console.error(`[DEBUG-HHB] Signia API - Error: ${response.statusText}`);
+      return [];
+    }
+    
+    const data = await response.json();
+    const arrayData = Array.isArray(data) ? data : [];
+    console.log(`[DEBUG-HHB] Signia API - Returned ${arrayData.length} records.`);
+    return arrayData;
+  } catch (e) {
+    console.error('[DEBUG-HHB] Signia API - Request failed:', e);
+    return [];
+  }
 }
 
 export const extractBirthdayFromCurp = (curp?: string): string | null => {
@@ -20,18 +37,22 @@ export const extractBirthdayFromCurp = (curp?: string): string | null => {
   return `${year}-${mm}-${dd}`
 }
 
-/**
- * Resolves absolute URLs for Signia assets.
- * Fixes the issue where the API occasionally returns localhost or relative storage paths.
- */
 export const resolveSigniaUrl = (url?: string): string | null => {
   if (!url) return null;
-  if (url.includes('signia.casitaapps.com')) return url;
+  console.log(`[DEBUG-HHB] Image Resolver - Original URL: ${url}`);
   
-  // Match relative storage paths and replace root domain
-  const match = url.match(/\/storage\/.*/);
-  if (match) {
-    return `https://signia.casitaapps.com${match[0]}`;
+  let resolved = url;
+  
+  if (url.startsWith('/storage') || url.startsWith('storage/')) {
+    const path = url.startsWith('/') ? url : `/${url}`;
+    resolved = `https://signia.casitaapps.com${path}`;
+  } else if (url.startsWith('http://localhost')) {
+    resolved = url.replace(/^http:\/\/localhost(:\d+)?/, 'https://signia.casitaapps.com');
   }
-  return url;
+  
+  if (resolved !== url) {
+    console.log(`[DEBUG-HHB] Image Resolver - Resolved to: ${resolved}`);
+  }
+  
+  return resolved;
 }

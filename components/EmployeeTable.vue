@@ -3,15 +3,14 @@
     <div v-for="item in data" :key="item.id" class="employee-card glass-panel" :class="{'birthday-glow': isToday(item.birthday)}">
       
       <div class="card-header">
-        <div class="avatar-container" :class="{'avatar-festive': isToday(item.birthday)}">
-          <img :src="item.picture || '/main.png'" alt="Fotografía" class="avatar-img" />
-          <div v-if="isToday(item.birthday)" class="birthday-crown">👑</div>
-        </div>
+        <!-- Replaced basic img with intelligent PremiumAvatar -->
+        <PremiumAvatar :src="item.picture" :festive="isToday(item.birthday)" />
+        
         <div class="actions-top">
           <Star 
             :class="['icon-btn star-icon', item.high_rank ? 'star-active' : 'star-inactive']" 
             @click="emit('update', item.id, { high_rank: !item.high_rank })"
-            title="Marcar como invitado especial"
+            title="Destacar colaborador"
           />
         </div>
       </div>
@@ -56,6 +55,7 @@
 
 <script setup>
 import { Star, Calendar, Palette, UserMinus } from 'lucide-vue-next'
+import PremiumAvatar from '~/components/PremiumAvatar.vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/es'
 dayjs.locale('es')
@@ -99,41 +99,6 @@ const isToday = (d) => d && dayjs(d).format('MM-DD') === dayjs().format('MM-DD')
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 16px;
-}
-
-.avatar-container {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  padding: 4px;
-  background: var(--border-color);
-  position: relative;
-}
-
-.avatar-festive {
-  background: linear-gradient(135deg, var(--secondary-gold), var(--accent-amber));
-}
-
-.avatar-img {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid white;
-}
-
-.birthday-crown {
-  position: absolute;
-  top: -12px;
-  right: -8px;
-  font-size: 1.5rem;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-  animation: float-crown 2s infinite alternate ease-in-out;
-}
-
-@keyframes float-crown {
-  0% { transform: translateY(0) rotate(10deg); }
-  100% { transform: translateY(-4px) rotate(-10deg); }
 }
 
 .actions-top {
