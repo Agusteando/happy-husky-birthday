@@ -1,7 +1,6 @@
 import { ref, computed } from 'vue'
 import dayjs from 'dayjs'
 
-// Strict mapping layer bridging internal codes to requested UI friendly names
 export const codeToUI: Record<string, string> = {
   PT: "Primaria Toluca",
   PM: "Primaria Metepec",
@@ -19,7 +18,6 @@ export const codeToUI: Record<string, string> = {
   EXT: "Externos e Invitados Especiales"
 }
 
-// Reverse lookup for translating UI selection back to internal short code
 export const plantelUItoCode: Record<string, string> = Object.fromEntries(
   Object.entries(codeToUI).map(([code, label]) => [label, code])
 )
@@ -47,37 +45,41 @@ export const useEmployees = () => {
     }
 
     const resolvedCode = plantelUItoCode[plantelName]
-    if (!resolvedCode) {
-      console.error(`[DEBUG-HHB] Client Fetch - Unknown UI plantel selected: "${plantelName}"`)
-      return
-    }
+    if (!resolvedCode) return
 
     loading.value = true
-    console.log(`[DEBUG-HHB] Client Fetch - UI Label: "${plantelName}" -> Resolved Internal Code: "${resolvedCode}"`)
     
     try {
-      // Send the strict API short code and fallback label for external resolving
       const fetchUrl = `/api/employees?plantelCode=${resolvedCode}&plantelNameFallback=${encodeURIComponent(plantelName)}`
-      console.log(`[DEBUG-HHB] Client Fetch - Requesting Local Server Adapter: ${fetchUrl}`)
-      
       const data: any = await $fetch(fetchUrl)
-      console.log(`[DEBUG-HHB] Client Fetch - Received ${data?.length || 0} employees from Server Adapter.`)
-      
       employees.value = data
     } catch (e) {
-      console.error('[DEBUG-HHB] Client Fetch - Error retrieving employee data:', e)
+      console.error('[DEBUG-HHB] Error fetching employees:', e)
     } finally {
       loading.value = false
     }
   }
 
   const filteredEmployees = computed(() => {
-    return employees.value.filter((emp: any) => {
-      const searchTxt = filterSearch.value.toLowerCase()
-      const matchesSearch = !searchTxt || 
-                            emp.name?.toLowerCase().includes(searchTxt) || 
-                            emp.email?.toLowerCase().includes(searchTxt)
-      return matchesSearch
+    const searchTxt = filterSearch.value.toLowerCase()
+    const todayStr = dayjs().format('MM-DD')
+
+    const baseFiltered = employees.value.filter((emp: any) => {
+      return !searchTxt || 
+             emp.name?.toLowerCase().includes(searchTxt) || 
+             emp.email?.toLowerCase().includes(searchTxt)
+    })
+
+    // Sorting: Cumpleaños del día siempre flotan en el Top #1, luego por orden cronológico del año
+    return baseFiltered.sort((a, b) => {
+      const aIsToday = a.birthday && dayjs(a.birthday).format('MM-DD') === todayStr
+      const bIsToday = b.birthday && dayjs(b.birthday).format('MM-DD') === todayStr
+      if (aIsToday && !bIsToday) return -1
+      if (!aIsToday && bIsToday) return 1
+      
+      if (!a.birthday) return 1
+      if (!b.birthday) return -1
+      return dayjs(a.birthday).format('MM-DD').localeCompare(dayjs(b.birthday).format('MM-DD'))
     })
   })
 
@@ -90,7 +92,6 @@ export const useEmployees = () => {
     let validAges = 0
     let totalAge = 0
     let todayBdays = 0
-
     const todayStr = dayjs().format('MM-DD')
 
     list.forEach((e: any) => {
@@ -122,12 +123,12 @@ export const useEmployees = () => {
       })
       if (filterPlantel.value) await fetchEmployees(filterPlantel.value)
     } catch (e) {
-      console.error('[DEBUG-HHB] Update Error', e)
+      console.error(e)
     }
   }
 
   const deleteEmployee = async (id: string) => {
-    if (!confirm('¿Está seguro de ocultar a este colaborador de las celebraciones activas?')) return
+    if (!confirm('¿Está seguro de ocultar a este colaborador de las celebraciones?')) return
     await updateEmployee(id, { baja: true })
   }
 
@@ -144,7 +145,7 @@ export const useEmployees = () => {
         await updateEmployee(emp.id, { event_id: res.eventId })
       }
     } catch (e) {
-      console.error('[DEBUG-HHB] Calendar Sync Error', e)
+      console.error(e)
     }
   }
 
@@ -155,7 +156,7 @@ export const useEmployees = () => {
         await fetchEmployees(filterPlantel.value)
       }
     } catch (e) {
-      console.error('[DEBUG-HHB] External User Creation Error', e)
+      console.error(e)
     }
   }
 

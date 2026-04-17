@@ -1,10 +1,10 @@
 import { reactive } from 'vue'
 
-const PIPELINE_VERSION = 'v8_spec_vision_meta';
+const PIPELINE_VERSION = 'v9_face_circle';
 
-// Estructura de caché para almacenar la imagen base64 y los metadatos deterministas
 interface CacheEntry {
   base64: string;
+  faceBase64?: string;
   meta: any;
 }
 
@@ -12,7 +12,7 @@ const memoryCache = new Map<string, CacheEntry>();
 
 const initDB = (): Promise<IDBDatabase> => new Promise((resolve, reject) => {
   if (typeof window === 'undefined') return reject('SSR');
-  const req = indexedDB.open('HHBAvatarDB', 2);
+  const req = indexedDB.open('HHBAvatarDB', 3);
   req.onupgradeneeded = (e: any) => {
     const db = e.target.result;
     if (!db.objectStoreNames.contains('avatars')) {
@@ -61,7 +61,7 @@ const setCached = async (id: string, entry: CacheEntry): Promise<void> => {
       tx.oncomplete = () => resolve();
     });
   } catch (e) {
-    // Se ignora silenciosamente cualquier fallo de escritura local
+    // Falla local ignorada
   }
 };
 
@@ -75,14 +75,12 @@ const loadImage = (url: string): Promise<HTMLImageElement> => {
   });
 };
 
-// --- SISTEMA DE COLAS Y CONCURRENCIA LIMITADA ---
 type Job = () => Promise<void>;
 const queue: Job[] = [];
 let activeJobs = 0;
 const MAX_CONCURRENCY = 3;
 
 const processQueue = () => {
-  console.log(`[DEBUG-HHB] Estado de la cola Vision: Activos=${activeJobs}/${MAX_CONCURRENCY}, Pendientes=${queue.length}`);
   while (activeJobs < MAX_CONCURRENCY && queue.length > 0) {
     const job = queue.shift();
     if (job) {
@@ -106,6 +104,7 @@ export const usePremiumAvatar = () => {
       displaySrc: originalImageUrl || '',
       originalSrc: originalImageUrl || '',
       processedSrc: null as string | null,
+      processedFaceSrc: null as string | null,
       meta: null as any,
       isProcessing: false,
       isProcessed: false,
@@ -120,10 +119,10 @@ export const usePremiumAvatar = () => {
       try {
         state.isProcessing = true;
         
-        // Verificación prioritaria de caché para no encolar elementos ya resueltos
         const cached = await getCached(cacheKey);
         if (cached) {
           state.processedSrc = cached.base64;
+          state.processedFaceSrc = cached.faceBase64 || cached.base64;
           state.displaySrc = cached.base64;
           state.meta = cached.meta;
           state.isProcessed = true;
@@ -131,11 +130,8 @@ export const usePremiumAvatar = () => {
           return;
         }
 
-        // Si es un trabajo nuevo, se añade a la cola global de procesamiento
         enqueueJob(async () => {
           try {
-            console.log(`[DEBUG-HHB] Vision API - Solicitud de red iniciada para: ${originalImageUrl}`);
-            
             const formData = new FormData();
             formData.append('imageUrl', originalImageUrl);
 
@@ -144,14 +140,10 @@ export const usePremiumAvatar = () => {
               body: formData
             });
 
-            if (!res.ok) {
-              throw new Error(`El servicio de visión rechazó la solicitud (${res.status}).`);
-            }
+            if (!res.ok) throw new Error(`El servicio rechazó la solicitud (${res.status}).`);
 
             const data = await res.json();
-            if (!data || !data.ok || !data.cropBox) {
-              throw new Error('Respuesta inválida o incompleta del motor de visión.');
-            }
+            if (!data || !data.ok || !data.cropBox) throw new Error('Respuesta incompleta de Visión.');
 
             const imgUrl = data.imageKey ? `https://vision.casitaapps.com/image/${data.imageKey}` : originalImageUrl;
             const img = await loadImage(imgUrl);
@@ -162,10 +154,6 @@ export const usePremiumAvatar = () => {
               xMax: Math.max(0, Math.min(1, data.cropBox.xMax || 1)),
               yMax: Math.max(0, Math.min(1, data.cropBox.yMax || 1))
             };
-
-            if (cb.xMax <= cb.xMin || cb.yMax <= cb.yMin) {
-              throw new Error('Las dimensiones de recorte están invertidas o son cero.');
-            }
 
             const sx = Math.floor(cb.xMin * img.width);
             const sy = Math.floor(cb.yMin * img.height);
@@ -180,9 +168,7 @@ export const usePremiumAvatar = () => {
             const canvas = document.createElement('canvas');
             canvas.width = cW;
             canvas.height = cH;
-            const ctx = canvas.getContext('2d', { willReadFrequently: true });
-            if (!ctx) throw new Error('Falló la inicialización del contexto 2D del Canvas principal.');
-
+            const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
             ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, cW, cH);
 
             if (data.maskAvailable && data.maskUrl) {
@@ -190,8 +176,7 @@ export const usePremiumAvatar = () => {
               const mc = document.createElement('canvas');
               mc.width = cW;
               mc.height = cH;
-              const mCtx = mc.getContext('2d', { willReadFrequently: true });
-              if (!mCtx) throw new Error('Falló la inicialización del contexto 2D de la máscara.');
+              const mCtx = mc.getContext('2d', { willReadFrequently: true })!;
 
               const msx = Math.floor(cb.xMin * maskImg.width);
               const msy = Math.floor(cb.yMin * maskImg.height);
@@ -208,36 +193,58 @@ export const usePremiumAvatar = () => {
                 if (maskData.data[i] < 255) { usesAlpha = true; break; }
               }
 
-              let visiblePixels = 0;
               for (let i = 0; i < mainData.data.length; i += 4) {
                 const maskIntensity = usesAlpha ? maskData.data[i + 3] : maskData.data[i];
                 mainData.data[i + 3] = Math.floor((mainData.data[i + 3] * maskIntensity) / 255);
-                if (mainData.data[i + 3] > 15) visiblePixels++;
               }
-
-              const visibleRatio = visiblePixels / (cW * cH);
-              if (visibleRatio < 0.15) {
-                throw new Error('La máscara eliminó demasiada información de la imagen (Safety Check).');
-              }
-
               ctx.putImageData(mainData, 0, 0);
             }
 
             const base64 = canvas.toDataURL('image/png');
-            
-            // Guardamos tanto la textura renderizada como la telemetría métrica de Vision
-            const cacheEntry = { base64, meta: data };
+            let faceBase64 = base64;
+
+            // Capa 2: Extracción Circular específica para rostros 3D usando FaceBox
+            if (data.faceBox) {
+              const faceCanvas = document.createElement('canvas');
+              faceCanvas.width = cW;
+              faceCanvas.height = cH;
+              const fCtx = faceCanvas.getContext('2d')!;
+
+              const fxMin = Math.max(0, data.faceBox.xMin);
+              const fxMax = Math.min(1, data.faceBox.xMax);
+              const fyMin = Math.max(0, data.faceBox.yMin);
+              const fyMax = Math.min(1, data.faceBox.yMax);
+
+              const fcX = ((fxMin + fxMax) / 2 - cb.xMin) / (cb.xMax - cb.xMin) * cW;
+              const fcY = ((fyMin + fyMax) / 2 - cb.yMin) / (cb.yMax - cb.yMin) * cH;
+              
+              const fWidth = (fxMax - fxMin) / (cb.xMax - cb.xMin) * cW;
+              const fHeight = (fyMax - fyMin) / (cb.yMax - cb.yMin) * cH;
+              
+              // Radio amplio para incluir cara, orejas y cabello
+              const radius = Math.max(fWidth, fHeight) * 0.75; 
+
+              fCtx.beginPath();
+              fCtx.arc(fcX, fcY, radius, 0, Math.PI * 2);
+              fCtx.fillStyle = 'white';
+              fCtx.fill();
+
+              fCtx.globalCompositeOperation = 'source-in';
+              fCtx.drawImage(canvas, 0, 0);
+              
+              faceBase64 = faceCanvas.toDataURL('image/png');
+            }
+
+            const cacheEntry = { base64, faceBase64, meta: data };
             await setCached(cacheKey, cacheEntry);
             
             state.processedSrc = base64;
+            state.processedFaceSrc = faceBase64;
             state.displaySrc = base64;
             state.meta = data;
             state.isProcessed = true;
-            
-            console.log(`[DEBUG-HHB] Vision API - Procesamiento y encolado finalizado con éxito.`);
 
           } catch (error: any) {
-            console.warn(`[DEBUG-HHB] Vision API - Fallo de procesamiento, reteniendo original: ${error.message}`);
             state.error = error.message;
           } finally {
             state.isProcessing = false;

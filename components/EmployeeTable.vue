@@ -79,18 +79,20 @@ const isToday = (d) => d && dayjs(d).format('MM-DD') === dayjs().format('MM-DD')
   display: flex;
   flex-direction: column;
   position: relative;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background: linear-gradient(to bottom right, #FFFFFF, #FCFBFA);
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .employee-card:hover {
   transform: translateY(-5px);
-  box-shadow: var(--shadow-hover);
+  box-shadow: 0 20px 40px -10px rgba(212, 175, 55, 0.15);
+  border-color: rgba(212, 175, 55, 0.3);
 }
 
 .birthday-glow {
-  background: linear-gradient(to bottom right, #FFFFFF, #FFFBEB);
-  border: 1px solid rgba(246, 224, 94, 0.6);
-  box-shadow: var(--shadow-glow);
+  background: linear-gradient(135deg, #FFFFFF 0%, #FFF9E6 100%);
+  border: 1px solid rgba(212, 175, 55, 0.4);
 }
 
 .card-header {

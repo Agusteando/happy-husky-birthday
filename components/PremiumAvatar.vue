@@ -1,10 +1,8 @@
 <template>
   <div class="avatar-container" :class="{'avatar-festive': festive, 'is-processed': state?.isProcessed}">
     
-    <!-- Fondo de marca suave visible debajo de la imagen procesada transparente -->
     <div v-if="state?.isProcessed" class="avatar-bg fade-in"></div>
     
-    <!-- Render principal ultrarrápido (se desvanece suavemente cuando el motor termina) -->
     <img 
       v-if="state?.originalSrc" 
       :src="state.originalSrc" 
@@ -13,7 +11,6 @@
       alt="Fotografía original del colaborador" 
     />
     
-    <!-- Transformación impecable a avatar procesado transparente flotando sobre el panel -->
     <img 
       v-if="state?.isProcessed" 
       :src="state.processedSrc" 
@@ -21,7 +18,6 @@
       alt="Fotografía procesada transparente" 
     />
     
-    <!-- Esqueleto de carga inicial -->
     <div v-if="!state?.displaySrc" class="avatar-skeleton pulse-anim"></div>
     
     <div v-if="festive" class="birthday-crown">👑</div>
@@ -56,9 +52,9 @@ watch(() => props.src, loadAvatar)
 .avatar-container {
   width: 80px;
   height: 80px;
-  border-radius: 28px; /* Elegante forma Squircle */
+  border-radius: 28px;
   padding: 4px;
-  background: linear-gradient(135deg, #F1F5F9, #FFFFFF);
+  background: linear-gradient(135deg, #FFFFFF, #FFF0F5);
   box-shadow: 
     0 4px 15px rgba(0, 0, 0, 0.05), 
     inset 0 2px 4px rgba(255, 255, 255, 1);
@@ -68,7 +64,7 @@ watch(() => props.src, loadAvatar)
 }
 
 .avatar-container.avatar-festive {
-  background: linear-gradient(135deg, var(--secondary-gold), #FFFBEB, var(--accent-amber));
+  background: linear-gradient(135deg, #FFD700, #FF8C00, #FF1493);
   box-shadow: 
     0 8px 25px rgba(212, 175, 55, 0.3), 
     inset 0 2px 6px rgba(255, 255, 255, 0.9);
@@ -78,11 +74,16 @@ watch(() => props.src, loadAvatar)
   position: absolute;
   top: 4px; left: 4px; right: 4px; bottom: 4px;
   border-radius: 24px;
-  background: radial-gradient(circle at top left, #FFFFFF 0%, #F8FAFC 60%, #E2E8F0 100%);
-  background-image: radial-gradient(#CBD5E1 1.5px, transparent 1.5px);
-  background-size: 8px 8px;
+  background: linear-gradient(135deg, rgba(255, 228, 225, 0.8) 0%, rgba(224, 255, 255, 0.6) 100%);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.6) 2px, transparent 2px);
+  background-size: 12px 12px;
   z-index: 0;
   box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.03);
+}
+
+.avatar-container.avatar-festive .avatar-bg {
+  background: linear-gradient(135deg, #FFFBEB 0%, #FFF5D1 100%);
+  background-image: radial-gradient(rgba(212, 175, 55, 0.2) 2px, transparent 2px);
 }
 
 .avatar-img {
@@ -106,7 +107,7 @@ watch(() => props.src, loadAvatar)
 
 .processed {
   object-fit: contain;
-  transform: scale(1.18) translateY(-2px); /* Bespoke framing, permitiendo que la cara resalte sutilmente */
+  transform: scale(1.18) translateY(-2px);
   transition: opacity 0.5s ease;
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
 }
