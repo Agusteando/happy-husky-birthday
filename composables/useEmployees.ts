@@ -10,7 +10,7 @@ export const useEmployees = () => {
   const fetchEmployees = async () => {
     loading.value = true
     try {
-      const data = await $fetch('/api/employees')
+      const data: any = await $fetch('/api/employees')
       employees.value = data
     } catch (e) {
       console.error(e)
@@ -28,6 +28,14 @@ export const useEmployees = () => {
                             emp.email?.toLowerCase().includes(searchTxt)
       return matchesPlantel && matchesSearch
     })
+  })
+
+  // Select 5 random employees with pictures for the 3D scene, gracefully fallback if no picture
+  const randomFaces = computed(() => {
+    const defaultFaces = ['/main.png', '/hhb.png']
+    const valid = employees.value.filter((e: any) => e.picture).map((e: any) => e.picture)
+    const combined = [...valid, ...defaultFaces, ...defaultFaces, ...defaultFaces]
+    return combined.sort(() => 0.5 - Math.random()).slice(0, 5)
   })
 
   const stats = computed(() => {
@@ -79,7 +87,7 @@ export const useEmployees = () => {
   }
 
   const deleteEmployee = async (id: string) => {
-    if (!confirm('¿Estás seguro de dar de baja a este empleado?')) return
+    if (!confirm('¿Estás seguro de dar de baja a este colaborador del sistema?')) return
     await updateEmployee(id, { baja: true })
   }
 
@@ -87,7 +95,7 @@ export const useEmployees = () => {
     try {
       if (emp.event_id) {
         await $fetch('/api/calendar/event', { method: 'DELETE', body: { event_id: emp.event_id } })
-        await updateEmployee(emp.id, { event_id: '' }) // Clear locally
+        await updateEmployee(emp.id, { event_id: '' }) 
       } else {
         const res: any = await $fetch('/api/calendar/event', { 
           method: 'POST', 
@@ -111,7 +119,7 @@ export const useEmployees = () => {
 
   const exportExcel = () => {
     const csvRows = []
-    const headers = ['Nombre', 'Email', 'Plantel', 'Cumpleaños', 'Estrella']
+    const headers = ['Nombre', 'Email', 'Sede', 'Cumpleaños', 'Destacado']
     csvRows.push(headers.join(','))
 
     filteredEmployees.value.forEach((e: any) => {
@@ -129,13 +137,13 @@ export const useEmployees = () => {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `empleados_${dayjs().format('YYYY-MM-DD')}.csv`
+    link.download = `directorio_celebraciones_${dayjs().format('YYYY-MM-DD')}.csv`
     link.click()
   }
 
   return {
     employees, loading, filterPlantel, filterSearch,
-    filteredEmployees, stats,
+    filteredEmployees, stats, randomFaces,
     fetchEmployees, updateEmployee, deleteEmployee,
     toggleCalendarEvent, addExternalUser, exportExcel
   }

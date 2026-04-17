@@ -3,6 +3,11 @@ export default defineNuxtConfig({
   nitro: {
     preset: 'vercel'
   },
+  runtimeConfig: {
+    public: {
+      googleClientId: process.env.GOOGLE_CLIENT_ID || ''
+    }
+  },
   app: {
     head: {
       title: 'Happy Husky Birthday | IECS-IEDIS',

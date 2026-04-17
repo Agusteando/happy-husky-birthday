@@ -1,15 +1,17 @@
 import { OAuth2Client } from 'google-auth-library'
 import bcrypt from 'bcryptjs'
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
-
 export default defineEventHandler(async (event) => {
   const { token } = await readBody(event)
+  const config = useRuntimeConfig()
+  const clientId = config.public.googleClientId || process.env.GOOGLE_CLIENT_ID
+  
+  const client = new OAuth2Client(clientId)
   
   try {
     const ticket = await client.verifyIdToken({
       idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: clientId,
     })
     const payload = ticket.getPayload()
     
