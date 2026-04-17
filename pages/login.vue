@@ -12,7 +12,7 @@
       </div>
       
       <h2>Acceso al sistema</h2>
-      <p>Inicia sesión con tu cuenta institucional para organizar las celebraciones del equipo.</p>
+      <p>Inicie sesión con su cuenta institucional para organizar las celebraciones del equipo.</p>
       
       <div class="auth-wrapper">
         <div id="google-btn" class="google-btn-container"></div>
@@ -40,7 +40,7 @@ onMounted(() => {
       })
       window.location.href = '/'
     } catch (e) {
-      alert('Error de autenticación. Verifica que estés usando tu cuenta institucional.')
+      alert('Error de autenticación. Verifique que esté usando su cuenta institucional.')
     }
   }
 

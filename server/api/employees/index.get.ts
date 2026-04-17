@@ -13,6 +13,7 @@ export default defineEventHandler(async (event) => {
 
   // Skip hitting Signia entirely if looking explicitly for Externals
   if (plantelCode && plantelCode !== 'EXT') {
+    // Pass strictly the short code to Signia
     signiaData = await fetchSigniaEmployees(plantelCode)
   }
 
@@ -44,7 +45,7 @@ export default defineEventHandler(async (event) => {
     if (ext.baja) return
     
     // Allow if EXT is explicitly requested, or if the external user's manual UI label matches the selection
-    if (plantelCode === 'EXT' || ext.plantel === plantelNameFallback) {
+    if (plantelCode === 'EXT' || ext.plantel === plantelNameFallback || ext.plantel === plantelCode) {
       merged.push({
         id: ext.id,
         name: ext.name,

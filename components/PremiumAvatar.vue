@@ -1,34 +1,16 @@
 <template>
   <div class="avatar-container" :class="{'avatar-festive': festive}">
-    <img v-if="processedSrc" :src="processedSrc" class="avatar-img fade-in" alt="Avatar" />
+    <img v-if="src" :src="src" class="avatar-img fade-in" alt="Fotografía del colaborador" />
     <div v-else class="avatar-skeleton pulse-anim"></div>
     <div v-if="festive" class="birthday-crown">👑</div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
-import { usePremiumAvatar } from '~/composables/usePremiumAvatar'
-
 const props = defineProps({
   src: { type: String, default: '' },
   festive: { type: Boolean, default: false }
 })
-
-const processedSrc = ref(null)
-const { processAvatar } = usePremiumAvatar()
-
-const loadAvatar = async () => {
-  processedSrc.value = null
-  if (props.src) {
-    processedSrc.value = await processAvatar(props.src)
-  } else {
-    processedSrc.value = '/main.png'
-  }
-}
-
-onMounted(loadAvatar)
-watch(() => props.src, loadAvatar)
 </script>
 
 <style scoped>

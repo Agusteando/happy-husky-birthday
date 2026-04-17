@@ -125,7 +125,7 @@ export const useEmployees = () => {
   }
 
   const deleteEmployee = async (id: string) => {
-    if (!confirm('¿Estás seguro de ocultar a este colaborador de las celebraciones activas?')) return
+    if (!confirm('¿Está seguro de ocultar a este colaborador de las celebraciones activas?')) return
     await updateEmployee(id, { baja: true })
   }
 

@@ -1,26 +1,23 @@
-/**
- * Fully restored fetch pipeline to allow shared usage across the server.
- * Accepts the strict internal code (e.g., 'PM', 'CT') to filter precisely at the external source.
- */
-export const fetchSigniaEmployees = async (plantelId?: string) => {
+export const fetchSigniaEmployees = async (plantelCode?: string) => {
   let url = 'https://signia.casitaapps.com/api/export/employees?isActive=true';
-  if (plantelId) {
-    url += `&plantelId=${plantelId}`;
+  if (plantelCode) {
+    url += `&plantelName=${encodeURIComponent(plantelCode)}`;
   }
 
-  console.log(`[DEBUG-HHB] Signia API - Fetching URL: ${url}`);
+  console.log(`[DEBUG-HHB] Signia API - Final URL: ${url}`);
   try {
     const response = await fetch(url);
-    console.log(`[DEBUG-HHB] Signia API - Response Status: ${response.status}`);
+    console.log(`[DEBUG-HHB] Signia API - Status: ${response.status}`);
     
     if (!response.ok) {
-      console.error(`[DEBUG-HHB] Signia API - Error: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error(`[DEBUG-HHB] Signia API - Error Text: ${errorText}`);
       return [];
     }
     
     const data = await response.json();
     const arrayData = Array.isArray(data) ? data : [];
-    console.log(`[DEBUG-HHB] Signia API - Returned ${arrayData.length} records.`);
+    console.log(`[DEBUG-HHB] Signia API - Returned count: ${arrayData.length}`);
     return arrayData;
   } catch (e) {
     console.error('[DEBUG-HHB] Signia API - Request failed:', e);

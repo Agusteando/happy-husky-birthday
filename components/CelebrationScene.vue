@@ -66,7 +66,7 @@ const initScene = () => {
   fillLight.position.set(-6, 5, -2)
   scene.add(fillLight)
 
-  // High-fidelity Confetti (Instanced Mesh for tumbling paper effect)
+  // High-fidelity Confetti
   const confettiGeo = new THREE.PlaneGeometry(0.12, 0.12)
   const confettiMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide })
   confettiMesh = new THREE.InstancedMesh(confettiGeo, confettiMat, confettiCount)
@@ -109,13 +109,13 @@ const initScene = () => {
     group.add(body)
 
     // Billboard Sprite-like Face
-    console.log('[DEBUG-HHB] Three.js - Face material enabled with transparent: true & depthWrite: false');
     const headGeo = new THREE.PlaneGeometry(1.2, 1.2)
     const headMat = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       side: THREE.DoubleSide,
       transparent: true,
-      depthWrite: false, // Essential to prevent the transparent areas from blocking confetti rendering
+      alphaTest: 0.05,
+      depthWrite: false, 
       roughness: 0.6
     })
     
@@ -124,7 +124,7 @@ const initScene = () => {
     head.castShadow = true
     group.add(head)
 
-    // Fetch and apply the PremiumAvatar cropped/masked base64 texture
+    // Fetch and apply the Vision API cropped/masked base64 texture
     if (faceUrl) {
       processAvatar(faceUrl).then(base64 => {
         textureLoader.load(base64, (tex) => {

@@ -2,7 +2,7 @@
   <div class="studio-overlay" @click.self="emit('close')">
     <div class="studio-modal">
       <div class="studio-header">
-        <h2>Estudio de diseño - {{ employee.name }}</h2>
+        <h2>Diseñador de felicitación - {{ employee.name }}</h2>
         <button class="close-btn" @click="emit('close')">✖</button>
       </div>
 
@@ -15,7 +15,7 @@
               class="template-bg" 
               :style="{ objectPosition: `${cropX}% ${cropY}%` }" 
             />
-            <div v-else class="empty-canvas">Sube una plantilla base</div>
+            <div v-else class="empty-canvas">Cargue una plantilla base</div>
             
             <div class="canvas-overlay">
               <h1 class="canvas-name">{{ employee.name }}</h1>
@@ -28,9 +28,9 @@
           </div>
           
           <div class="crop-controls" v-if="templateBg">
-            <label>Encuadre Horizontal (X)</label>
+            <label>Ajuste horizontal (X)</label>
             <input type="range" v-model="cropX" min="0" max="100" @change="saveTemplateMeta" />
-            <label>Encuadre Vertical (Y)</label>
+            <label>Ajuste vertical (Y)</label>
             <input type="range" v-model="cropY" min="0" max="100" @change="saveTemplateMeta" />
           </div>
         </div>
@@ -38,14 +38,14 @@
         <div class="tools-panel">
           <div class="tool-section">
             <h3>Fondo de plantilla</h3>
-            <p class="help-text">Selecciona la plantilla base para la felicitación.</p>
+            <p class="help-text">Seleccione la plantilla base para la felicitación.</p>
             <input type="file" accept="image/*" @change="handleFileUpload" class="file-input" />
           </div>
 
           <div class="tool-section">
             <h3>Añadir mensaje</h3>
-            <input v-model="newAuthor" placeholder="Tu nombre" class="full-width mb-2" />
-            <textarea v-model="newMessage" placeholder="Escribe un mensaje de felicitación..." rows="3" class="full-width"></textarea>
+            <input v-model="newAuthor" placeholder="Su nombre" class="full-width mb-2" />
+            <textarea v-model="newMessage" placeholder="Escriba un mensaje de felicitación..." rows="3" class="full-width"></textarea>
             <button class="btn-primary mt-2" @click="addMessage">Guardar mensaje</button>
           </div>
         </div>
@@ -80,7 +80,7 @@ const loadData = async () => {
     }
     messages.value = res.messages || []
   } catch (e) {
-    console.error('Error cargando estudio', e)
+    console.error('Error cargando diseño', e)
   }
 }
 
@@ -108,7 +108,7 @@ const saveTemplateMeta = async () => {
 }
 
 const addMessage = async () => {
-  if (!newMessage.value || !newAuthor.value) return alert('Completa nombre y mensaje.')
+  if (!newMessage.value || !newAuthor.value) return alert('Por favor, complete nombre y mensaje.')
   try {
     const msg = await $fetch('/api/templates/messages', {
       method: 'POST',

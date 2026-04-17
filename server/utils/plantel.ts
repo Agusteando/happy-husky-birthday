@@ -1,7 +1,3 @@
-/**
- * Capa de normalización robusta para las sedes (planteles).
- * Vincula los nombres exactos de la interfaz de usuario con los valores ERP crudos.
- */
 export const plantelUItoAPI: Record<string, string[]> = {
   'Primaria Metepec': ['primaria metepec', 'pri metepec'],
   'Primaria Toluca': ['primaria toluca', 'pri toluca'],
@@ -26,6 +22,5 @@ export function normalizeAndMatchPlantel(apiValue: string, filterLabel: string):
     if (apiNorm.includes(phrase)) return true;
   }
   
-  // Respaldo final: Verificación de coincidencia exacta
   return apiValue === filterLabel;
 }

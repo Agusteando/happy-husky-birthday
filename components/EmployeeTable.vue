@@ -3,7 +3,6 @@
     <div v-for="item in data" :key="item.id" class="employee-card glass-panel" :class="{'birthday-glow': isToday(item.birthday)}">
       
       <div class="card-header">
-        <!-- Replaced basic img with intelligent PremiumAvatar -->
         <PremiumAvatar :src="item.picture" :festive="isToday(item.birthday)" />
         
         <div class="actions-top">
@@ -17,7 +16,7 @@
 
       <div class="card-body">
         <h3 class="employee-name">{{ item.name }} {{ item.apellidoPaterno || '' }}</h3>
-        <p class="employee-role">{{ item.plantel?.name || item.plantel || 'Sin sede' }}</p>
+        <p class="employee-role">{{ item.plantel?.name || item.plantel || 'Sin sede asignada' }}</p>
 
         <div class="editable-fields">
           <div class="field-group">
@@ -35,8 +34,8 @@
         <button :class="['action-btn', item.event_id ? 'btn-active-cal' : 'btn-ghost']" @click="emit('calendar', item)" title="Sincronizar con Google Calendar">
           <Calendar class="icon-sm" /> Calendar
         </button>
-        <button class="action-btn btn-ghost" @click="emit('openStudio', item)" title="Crear diseño de felicitación">
-          <Palette class="icon-sm" /> Estudio
+        <button class="action-btn btn-ghost" @click="emit('openStudio', item)" title="Diseñar felicitación">
+          <Palette class="icon-sm" /> Diseñar
         </button>
         <button class="action-btn btn-danger-subtle" @click="emit('delete', item.id)" title="Ocultar del directorio">
           <UserMinus class="icon-sm" />
@@ -47,8 +46,8 @@
 
     <div v-if="data.length === 0" class="empty-state glass-panel">
       <div class="empty-icon">🎈</div>
-      <h3>El directorio está vacío</h3>
-      <p>No encontramos colaboradores con los filtros aplicados en esta sede.</p>
+      <h3>No hay colaboradores</h3>
+      <p>No se encontraron colaboradores en esta sede con los filtros aplicados.</p>
     </div>
   </div>
 </template>

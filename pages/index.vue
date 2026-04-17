@@ -22,7 +22,7 @@
       <div class="hero-content">
         <div class="main-selector-glass">
           <select v-model="filterPlantel" class="premium-select hero-select">
-            <option value="" disabled>Elige una sede para comenzar...</option>
+            <option value="" disabled>Seleccione una sede para comenzar...</option>
             <option v-for="option in plantelOptions" :key="option" :value="option">
               {{ option }}
             </option>
@@ -36,14 +36,14 @@
 
       <div class="controls-bar glass-panel">
         <div class="filters">
-          <input type="text" v-model="filterSearch" placeholder="Buscar talento por nombre..." class="search-input" />
+          <input type="text" v-model="filterSearch" placeholder="Buscar colaborador por nombre..." class="search-input" />
         </div>
         <div class="actions">
           <button class="btn btn-secondary" @click="exportExcel">
-            Descargar Directorio
+            Exportar directorio
           </button>
           <button class="btn btn-primary" @click="showAddModal = true">
-            Registrar Invitado
+            Registrar invitado externo
           </button>
         </div>
       </div>
@@ -66,25 +66,25 @@
     <!-- Modal Extra User -->
     <div v-if="showAddModal" class="modal-overlay" @click.self="showAddModal = false">
       <div class="modal-content">
-        <h3>Registrar Invitado Especial</h3>
-        <p class="modal-subtitle">Añade talento externo a las celebraciones de {{ filterPlantel }}.</p>
+        <h3>Registrar invitado externo</h3>
+        <p class="modal-subtitle">Añada a colaboradores externos a las celebraciones de {{ filterPlantel }}.</p>
         
         <div class="form-group">
-          <label>Nombre Completo</label>
+          <label>Nombre completo</label>
           <input v-model="newUser.name" placeholder="Ej. Juan Pérez" />
         </div>
         <div class="form-group">
-          <label>Correo Electrónico</label>
+          <label>Correo electrónico</label>
           <input v-model="newUser.email" placeholder="institucional@iecs.edu.mx" />
         </div>
         <div class="form-group">
-          <label>Fecha de Nacimiento</label>
+          <label>Fecha de nacimiento</label>
           <input v-model="newUser.birthday" type="date" />
         </div>
 
         <div class="modal-actions">
           <button class="btn btn-ghost" @click="showAddModal = false">Cancelar</button>
-          <button class="btn btn-primary" @click="submitExternal">Guardar Registro</button>
+          <button class="btn btn-primary" @click="submitExternal">Guardar registro</button>
         </div>
       </div>
     </div>
