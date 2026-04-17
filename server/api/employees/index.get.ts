@@ -49,7 +49,7 @@ export default defineEventHandler(async (event) => {
       merged.push({
         id: ext.id,
         name: ext.name,
-        plantel: { name: ext.plantel },
+        plantel: { name: ext.plantel, label: ext.plantel },
         email: ext.email,
         birthday: ext.birthday ? dayjs(ext.birthday).format('YYYY-MM-DD') : null,
         high_rank: ext.high_rank === 1,

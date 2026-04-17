@@ -14,6 +14,7 @@ const canvasContainer = ref(null)
 
 let scene, camera, renderer, animationId
 const characters = []
+const activeUnwatchers = []
 let confettiMesh = null
 const confettiCount = 350
 const dummy = new THREE.Object3D()
@@ -24,6 +25,10 @@ const initScene = () => {
   if (!canvasContainer.value) return
 
   canvasContainer.value.innerHTML = '<div class="hero-gradient-overlay"></div>'
+  
+  // Clean up any reactive watchers from the previous scene instance
+  activeUnwatchers.forEach(unwatch => unwatch())
+  activeUnwatchers.length = 0
 
   scene = new THREE.Scene()
   scene.background = new THREE.Color('#FAF9F6')
@@ -98,6 +103,7 @@ const initScene = () => {
 
   const createCharacter = (faceUrl, index) => {
     const group = new THREE.Group()
+    const animState = { isSwapping: false, swapTime: 0 }
 
     // Soft 3D bodies
     const bodyGeo = new THREE.CapsuleGeometry(0.35, 0.5, 4, 16)
@@ -114,8 +120,8 @@ const initScene = () => {
       color: 0xffffff,
       side: THREE.DoubleSide,
       transparent: true,
-      alphaTest: 0.05,
-      depthWrite: false, 
+      alphaTest: 0.1,
+      depthWrite: true, 
       roughness: 0.6
     })
     
@@ -124,15 +130,39 @@ const initScene = () => {
     head.castShadow = true
     group.add(head)
 
-    // Fetch and apply the Vision API cropped/masked base64 texture
+    // Fetch and bind to the reactive Vision API pipeline
     if (faceUrl) {
-      processAvatar(faceUrl).then(base64 => {
-        textureLoader.load(base64, (tex) => {
+      const pipeline = processAvatar(faceUrl)
+
+      // 1. Instant rendering of the fallback or cached original
+      if (pipeline.displaySrc) {
+        textureLoader.load(pipeline.displaySrc, (tex) => {
           tex.colorSpace = THREE.SRGBColorSpace
           headMat.map = tex
           headMat.needsUpdate = true
         })
+      }
+
+      // 2. Subscribe to reactive changes for progressive swap
+      const unwatch = watch(() => pipeline.processedSrc, (newSrc) => {
+        if (newSrc && newSrc !== headMat.map?.image?.src) {
+          console.log(`[DEBUG-HHB] Escena 3D - Reemplazando textura procesada asíncronamente`)
+          textureLoader.load(newSrc, (newTex) => {
+            newTex.colorSpace = THREE.SRGBColorSpace
+            const oldTex = headMat.map
+            headMat.map = newTex
+            headMat.needsUpdate = true
+            
+            // Clean up old memory to prevent texture leaks
+            if (oldTex) oldTex.dispose()
+
+            // Trigger a joyful scale bounce animation
+            animState.isSwapping = true
+            animState.swapTime = clock.getElapsedTime()
+          })
+        }
       })
+      activeUnwatchers.push(unwatch)
     }
 
     if (index === 1) {
@@ -173,7 +203,8 @@ const initScene = () => {
       headMesh: head,
       targetPos,
       isBirthdayPerson: index === 0,
-      timeOffset: Math.random() * 100 
+      timeOffset: Math.random() * 100,
+      animState
     }
   }
 
@@ -223,6 +254,18 @@ const initScene = () => {
         char.mesh.position.y = Math.abs(Math.sin(t * 6 + char.timeOffset)) * 0.1
         char.mesh.lookAt(0, char.mesh.position.y, 2.5)
       }
+
+      // Execute subtle animated bounce when reactive texture swap triggers
+      if (char.animState.isSwapping) {
+        const elapsed = t - char.animState.swapTime
+        if (elapsed < 0.3) {
+          const bounce = 1 + Math.sin(elapsed * Math.PI / 0.3) * 0.15
+          char.headMesh.scale.set(bounce, bounce, bounce)
+        } else {
+          char.headMesh.scale.set(1, 1, 1)
+          char.animState.isSwapping = false
+        }
+      }
     })
 
     camera.position.x = Math.sin(t * 0.15) * 2
@@ -246,6 +289,7 @@ watch(() => props.faces, () => {
 }, { deep: true })
 
 onBeforeUnmount(() => {
+  activeUnwatchers.forEach(unwatch => unwatch())
   if (animationId) cancelAnimationFrame(animationId)
   if (renderer) renderer.dispose()
   window.removeEventListener('resize', () => {})

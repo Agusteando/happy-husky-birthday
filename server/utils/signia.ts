@@ -1,7 +1,7 @@
 export const fetchSigniaEmployees = async (plantelCode?: string) => {
   let url = 'https://signia.casitaapps.com/api/export/employees?isActive=true';
   if (plantelCode) {
-    url += `&plantelName=${encodeURIComponent(plantelCode)}`;
+    url += `&plantelNameExact=${encodeURIComponent(plantelCode)}`;
   }
 
   console.log(`[DEBUG-HHB] Signia API - Final URL: ${url}`);

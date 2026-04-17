@@ -16,7 +16,7 @@
 
       <div class="card-body">
         <h3 class="employee-name">{{ item.name }} {{ item.apellidoPaterno || '' }}</h3>
-        <p class="employee-role">{{ item.plantel?.name || item.plantel || 'Sin sede asignada' }}</p>
+        <p class="employee-role">{{ item.plantel?.label || item.plantel?.name || item.plantel || 'Sin sede asignada' }}</p>
 
         <div class="editable-fields">
           <div class="field-group">

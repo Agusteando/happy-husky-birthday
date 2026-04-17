@@ -3,17 +3,19 @@ import dayjs from 'dayjs'
 
 // Strict mapping layer bridging internal codes to requested UI friendly names
 export const codeToUI: Record<string, string> = {
-  IS: "ISSSTE Toluca",
-  ISM: "ISSSTE Metepec",
-  PREEM: "Preescolar Metepec",
+  PT: "Primaria Toluca",
+  PM: "Primaria Metepec",
+  CT: "Casita Toluca",
+  CM: "Casita Metepec",
+  CO: "Casita Ocoyoacac",
   PREET: "Preescolar Toluca",
+  PREEM: "Preescolar Metepec",
   SE: "Secundaria Toluca",
   SEM: "Secundaria Metepec",
-  DCA: "Desarrollo Climaya",
-  CO: "Casita Ocoyoacac",
-  CM: "Casita Metepec",
-  CT: "Casita Toluca",
+  IS: "ISSSTE Toluca",
+  ISM: "ISSSTE Metepec",
   DES: "Desarrollo Metepec",
+  DCA: "Desarrollo Climaya",
   EXT: "Externos e Invitados Especiales"
 }
 
@@ -54,7 +56,7 @@ export const useEmployees = () => {
     console.log(`[DEBUG-HHB] Client Fetch - UI Label: "${plantelName}" -> Resolved Internal Code: "${resolvedCode}"`)
     
     try {
-      // Send both the strict API code and the original UI name (to help match manual external users)
+      // Send the strict API short code and fallback label for external resolving
       const fetchUrl = `/api/employees?plantelCode=${resolvedCode}&plantelNameFallback=${encodeURIComponent(plantelName)}`
       console.log(`[DEBUG-HHB] Client Fetch - Requesting Local Server Adapter: ${fetchUrl}`)
       
@@ -166,7 +168,7 @@ export const useEmployees = () => {
       const row = [
         `"${e.name || ''}"`,
         `"${e.email || ''}"`,
-        `"${e.plantel?.name || e.plantel || ''}"`,
+        `"${e.plantel?.label || e.plantel?.name || e.plantel || ''}"`,
         `"${e.birthday || ''}"`,
         e.high_rank ? 'Si' : 'No'
       ]
