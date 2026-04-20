@@ -294,7 +294,9 @@ const initScene = () => {
     activeCandleLights.push(glow)
   }
 
+  // Reducimos un poco el tamaño del pastel según lo solicitado
   cakeGroup.position.set(0, 0, 4.5)
+  cakeGroup.scale.set(0.82, 0.82, 0.82)
   scene.add(cakeGroup)
 
   // ==========================================

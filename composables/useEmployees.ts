@@ -28,11 +28,22 @@ export const useEmployees = () => {
   const filterPlantel = ref('')
   const filterSearch = ref('')
   const heroFaces = ref<string[]>([])
+  const globalBirthers = ref<any[]>([])
 
   const fetchHeroFaces = async () => {
     try {
       const data: any = await $fetch('/api/employees/faces')
-      heroFaces.value = data
+      globalBirthers.value = data.todayBirthers || []
+      
+      const birtherFaces = globalBirthers.value.map(b => b.picture).filter(Boolean)
+      
+      if (birtherFaces.length > 0) {
+        // Garantizamos que los cumpleañeros formen parte de la escena, rellenando con aleatorios
+        const combined = Array.from(new Set([...birtherFaces, ...(data.fallbackFaces || [])])).slice(0, 5)
+        heroFaces.value = combined
+      } else {
+        heroFaces.value = data.fallbackFaces || []
+      }
     } catch (e) {
       console.error('[DEBUG-HHB] Client Fetch - Could not load hero faces', e)
     }
@@ -122,6 +133,8 @@ export const useEmployees = () => {
         body: { id, ...payload }
       })
       if (filterPlantel.value) await fetchEmployees(filterPlantel.value)
+      // Actualizamos hero si impacta globales
+      await fetchHeroFaces()
     } catch (e) {
       console.error(e)
     }
@@ -155,6 +168,7 @@ export const useEmployees = () => {
       if (filterPlantel.value === user.plantel || filterPlantel.value === codeToUI['EXT']) {
         await fetchEmployees(filterPlantel.value)
       }
+      await fetchHeroFaces()
     } catch (e) {
       console.error(e)
     }
@@ -185,7 +199,7 @@ export const useEmployees = () => {
   }
 
   return {
-    employees, loading, filterPlantel, filterSearch, heroFaces,
+    employees, loading, filterPlantel, filterSearch, heroFaces, globalBirthers,
     filteredEmployees, stats,
     fetchEmployees, fetchHeroFaces, updateEmployee, deleteEmployee,
     toggleCalendarEvent, addExternalUser, exportExcel

@@ -31,6 +31,7 @@
       </div>
     </div>
 
+    <!-- Directorio de sede específica -->
     <main class="main-content" v-if="filterPlantel">
       <DashboardStats :stats="stats" />
 
@@ -61,6 +62,30 @@
         @calendar="toggleCalendarEvent"
         @openStudio="openStudio"
       />
+    </main>
+
+    <!-- Estado principal (Global): Mostramos cumpleañeros de hoy antes de filtrar -->
+    <main class="main-content landing-state" v-else>
+      <div v-if="globalBirthers.length > 0">
+        <div class="landing-header glass-panel">
+          <h2>🎉 Hoy celebramos a nivel global a:</h2>
+          <p>¡No pierda la oportunidad de enviar sus felicitaciones!</p>
+        </div>
+        
+        <EmployeeTable 
+          :data="globalBirthers" 
+          @update="updateEmployee" 
+          @delete="deleteEmployee"
+          @calendar="toggleCalendarEvent"
+          @openStudio="openStudio"
+        />
+      </div>
+      
+      <div v-else class="empty-state glass-panel" style="margin-top: 40px;">
+        <div class="empty-icon">🎈</div>
+        <h2>Bienvenido al panel de celebraciones</h2>
+        <p>Seleccione una sede en el menú superior para comenzar a explorar el directorio.</p>
+      </div>
     </main>
 
     <!-- Modal Extra User -->
@@ -106,7 +131,7 @@ import TemplateStudio from '~/components/TemplateStudio.vue'
 import { useEmployees, codeToUI } from '~/composables/useEmployees'
 
 const { 
-  loading, stats, filteredEmployees, filterPlantel, filterSearch, heroFaces,
+  loading, stats, filteredEmployees, filterPlantel, filterSearch, heroFaces, globalBirthers,
   fetchEmployees, fetchHeroFaces, updateEmployee, deleteEmployee, toggleCalendarEvent, addExternalUser, exportExcel 
 } = useEmployees()
 
@@ -260,6 +285,24 @@ const logout = async () => {
   box-sizing: border-box; 
 }
 
+.landing-header {
+  padding: 32px;
+  margin-bottom: 32px;
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+.landing-header h2 {
+  margin: 0 0 12px 0;
+  color: var(--primary-navy);
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+}
+.landing-header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
 .controls-bar {
   display: flex;
   justify-content: space-between;
@@ -314,4 +357,16 @@ const logout = async () => {
 .form-group { display: flex; flex-direction: column; gap: 8px; }
 .form-group label { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
 .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px; }
+
+.empty-state {
+  text-align: center;
+  padding: 60px !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.empty-icon { font-size: 3rem; animation: float-crown 3s infinite alternate; }
+.empty-state h2 { margin: 0; color: var(--primary-navy); font-size: 1.8rem; }
+.empty-state p { color: var(--text-secondary); margin: 0; font-size: 1.1rem; }
 </style>
