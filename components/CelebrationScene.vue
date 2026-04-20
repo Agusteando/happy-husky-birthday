@@ -37,8 +37,6 @@ let isDragging = false
 let previousX = 0
 
 const { processAvatar } = usePremiumAvatar()
-
-// Initialized here to guarantee it's available before any avatar watcher triggers
 const clock = new THREE.Clock()
 
 const initScene = () => {
@@ -124,7 +122,6 @@ const initScene = () => {
   // ==========================================
   const cakeGroup = new THREE.Group()
 
-  // Silver serving plate
   const plateGeo = new THREE.CylinderGeometry(1.68, 1.68, 0.07, 48)
   const plateMat = new THREE.MeshStandardMaterial({ color: '#C8C8C8', roughness: 0.08, metalness: 0.9 })
   const plate = new THREE.Mesh(plateGeo, plateMat)
@@ -133,7 +130,6 @@ const initScene = () => {
   plate.receiveShadow = true
   cakeGroup.add(plate)
 
-  // ── TIER 1 — Chocolate ──
   const t1Geo = new THREE.CylinderGeometry(1.40, 1.40, 0.70, 44)
   const t1Mat = new THREE.MeshStandardMaterial({ color: '#7B3F28', roughness: 0.65 })
   const t1 = new THREE.Mesh(t1Geo, t1Mat)
@@ -142,14 +138,12 @@ const initScene = () => {
   t1.receiveShadow = true
   cakeGroup.add(t1)
 
-  // Tier 1 white cream top layer
   const ct1Geo = new THREE.CylinderGeometry(1.42, 1.42, 0.09, 44)
   const ct1Mat = new THREE.MeshStandardMaterial({ color: '#FFFAF0', roughness: 0.28 })
   const ct1 = new THREE.Mesh(ct1Geo, ct1Mat)
   ct1.position.y = 0.815
   cakeGroup.add(ct1)
 
-  // Tier 1 drips (cream drips hanging down)
   for (let i = 0; i < 15; i++) {
     const a = (i / 15) * Math.PI * 2 + (Math.random() - 0.5) * 0.2
     const r = 1.39
@@ -161,7 +155,6 @@ const initScene = () => {
     cakeGroup.add(drip)
   }
 
-  // ── TIER 2 — Vanilla/Lemon ──
   const t2Geo = new THREE.CylinderGeometry(0.97, 0.97, 0.58, 44)
   const t2Mat = new THREE.MeshStandardMaterial({ color: '#FFF8CC', roughness: 0.60 })
   const t2 = new THREE.Mesh(t2Geo, t2Mat)
@@ -170,14 +163,12 @@ const initScene = () => {
   t2.receiveShadow = true
   cakeGroup.add(t2)
 
-  // Tier 2 pink cream top layer
   const ct2Geo = new THREE.CylinderGeometry(0.99, 0.99, 0.09, 44)
   const ct2Mat = new THREE.MeshStandardMaterial({ color: '#FFB6C1', roughness: 0.24 })
   const ct2 = new THREE.Mesh(ct2Geo, ct2Mat)
   ct2.position.y = 1.49
   cakeGroup.add(ct2)
 
-  // Tier 2 pink drips
   for (let i = 0; i < 11; i++) {
     const a = (i / 11) * Math.PI * 2 + (Math.random() - 0.5) * 0.2
     const r = 0.97
@@ -189,7 +180,6 @@ const initScene = () => {
     cakeGroup.add(drip)
   }
 
-  // ── TIER 3 — Strawberry Pink ──
   const t3Geo = new THREE.CylinderGeometry(0.63, 0.63, 0.47, 44)
   const t3Mat = new THREE.MeshStandardMaterial({ color: '#FFB6C1', roughness: 0.55 })
   const t3 = new THREE.Mesh(t3Geo, t3Mat)
@@ -198,14 +188,12 @@ const initScene = () => {
   t3.receiveShadow = true
   cakeGroup.add(t3)
 
-  // Top whipped cream dome
   const domeGeo = new THREE.SphereGeometry(0.65, 36, 18, 0, Math.PI * 2, 0, Math.PI * 0.52)
   const domeMat = new THREE.MeshStandardMaterial({ color: '#FFFAF0', roughness: 0.18 })
   const dome = new THREE.Mesh(domeGeo, domeMat)
   dome.position.y = 2.005
   cakeGroup.add(dome)
 
-  // Strawberry on top
   const strawGeo = new THREE.SphereGeometry(0.12, 12, 12)
   const strawMat = new THREE.MeshStandardMaterial({ color: '#E82020', roughness: 0.38 })
   const straw = new THREE.Mesh(strawGeo, strawMat)
@@ -213,14 +201,12 @@ const initScene = () => {
   straw.position.y = 2.26
   cakeGroup.add(straw)
 
-  // Strawberry leaf/calyx
   const leafGeo = new THREE.ConeGeometry(0.1, 0.11, 6)
   const leafMat = new THREE.MeshStandardMaterial({ color: '#228B22', roughness: 0.85 })
   const leaf = new THREE.Mesh(leafGeo, leafMat)
   leaf.position.y = 2.35
   cakeGroup.add(leaf)
 
-  // Colorful sprinkles on top cream
   const sprGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.09, 6)
   const sprMesh = new THREE.InstancedMesh(sprGeo, new THREE.MeshBasicMaterial({ color: 0xffffff }), 65)
   const sprColors = ['#FF6B9D','#FFB347','#87CEEB','#98FB98','#DDA0DD','#FF8C00','#00CED1','#FFD700']
@@ -239,7 +225,6 @@ const initScene = () => {
   if (sprMesh.instanceColor) sprMesh.instanceColor.needsUpdate = true
   cakeGroup.add(sprMesh)
 
-  // ── 6 COLORFUL CANDLES ──
   const candleColours = ['#FF6B9D','#87CEEB','#98FB98','#FFB347','#DDA0DD','#FF8C8C']
   for (let i = 0; i < 6; i++) {
     const ang = (i / 6) * Math.PI * 2
@@ -248,7 +233,6 @@ const initScene = () => {
     const cz = Math.sin(ang) * cr
     const baseY = 2.13
 
-    // Candle body with slight color stripe
     const candleGeo = new THREE.CylinderGeometry(0.043, 0.043, 0.44, 12)
     const candleMat = new THREE.MeshStandardMaterial({ color: candleColours[i], roughness: 0.48 })
     const candle = new THREE.Mesh(candleGeo, candleMat)
@@ -256,7 +240,6 @@ const initScene = () => {
     candle.castShadow = true
     cakeGroup.add(candle)
 
-    // Wax drip on candle side
     const waxGeo = new THREE.SphereGeometry(0.04, 6, 6)
     const waxMat = new THREE.MeshStandardMaterial({ color: '#FFFFF0', roughness: 0.35 })
     const wax = new THREE.Mesh(waxGeo, waxMat)
@@ -264,14 +247,12 @@ const initScene = () => {
     wax.position.set(cx + 0.025, baseY + 0.4, cz)
     cakeGroup.add(wax)
 
-    // Wick
     const wickGeo = new THREE.CylinderGeometry(0.007, 0.007, 0.06, 6)
     const wickMat = new THREE.MeshBasicMaterial({ color: '#2D1A0E' })
     const wick = new THREE.Mesh(wickGeo, wickMat)
     wick.position.set(cx, baseY + 0.475, cz)
     cakeGroup.add(wick)
 
-    // Outer flame
     const flameGeo = new THREE.ConeGeometry(0.053, 0.175, 12)
     const flameMat = new THREE.MeshBasicMaterial({ color: '#FF8C00' })
     const flame = new THREE.Mesh(flameGeo, flameMat)
@@ -279,7 +260,6 @@ const initScene = () => {
     cakeGroup.add(flame)
     activeFlames.push(flame)
 
-    // Inner flame — bright golden core
     const innerGeo = new THREE.ConeGeometry(0.026, 0.095, 8)
     const innerMat = new THREE.MeshBasicMaterial({ color: '#FFE840' })
     const inner = new THREE.Mesh(innerGeo, innerMat)
@@ -287,14 +267,12 @@ const initScene = () => {
     cakeGroup.add(inner)
     activeFlames.push(inner)
 
-    // Per-candle glow point light
     const glow = new THREE.PointLight('#FF9940', 15, 3.8)
     glow.position.set(cx, baseY + 0.56, cz)
     cakeGroup.add(glow)
     activeCandleLights.push(glow)
   }
 
-  // Reducimos un poco el tamaño del pastel según lo solicitado
   cakeGroup.position.set(0, 0, 4.5)
   cakeGroup.scale.set(0.82, 0.82, 0.82)
   scene.add(cakeGroup)
@@ -322,14 +300,12 @@ const initScene = () => {
     ball.castShadow = true
     bGroup.add(ball)
 
-    // Knot
     const knotGeo = new THREE.SphereGeometry(0.055, 8, 8)
     const knotMat = new THREE.MeshStandardMaterial({ color: balloonColours[bi], roughness: 0.85 })
     const knot = new THREE.Mesh(knotGeo, knotMat)
     knot.position.y = -0.48
     bGroup.add(knot)
 
-    // Curly string
     const pts = []
     for (let j = 0; j <= 12; j++) {
       pts.push(new THREE.Vector3(Math.sin(j * 0.38) * 0.06, -0.5 - j * 0.2, 0))
@@ -365,7 +341,7 @@ const initScene = () => {
   })
 
   // ==========================================
-  // CONFETTI — 500 pieces, 8 vivid colours
+  // CONFETTI
   // ==========================================
   const confettiGeo = new THREE.PlaneGeometry(0.12, 0.12)
   confettiMesh = new THREE.InstancedMesh(confettiGeo, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }), confettiCount)
@@ -398,7 +374,9 @@ const initScene = () => {
 
   const createCharacter = (faceUrl, index) => {
     const group = new THREE.Group()
-    const animState = { isSwapping: false, swapTime: 0 }
+    
+    const targetScale = ref(faceUrl ? 0 : 1)
+    group.scale.setScalar(targetScale.value)
 
     const bodyGeo = new THREE.CapsuleGeometry(0.35, 0.5, 4, 16)
     const colorOpts = ['#FFF0F5', '#E0FFFF', '#FFF8DC', '#F0E68C', '#E6E6FA']
@@ -428,10 +406,10 @@ const initScene = () => {
     headMesh.castShadow = true
     headGroup.add(headMesh)
 
-    // --- BIRTHDAY HATS ADDED & LOWERED ---
+    // Hats
     const hatH = 0.57
     const hatR = 0.22
-    const hatBaseY = 0.38 // lowered from 0.5 to fit better over the head
+    const hatBaseY = 0.38
     
     const hatGeo = new THREE.ConeGeometry(hatR, hatH, 16)
     const hatMat = new THREE.MeshStandardMaterial({ color: hatColours[index % hatColours.length], roughness: 0.42 })
@@ -459,81 +437,60 @@ const initScene = () => {
     const pom = new THREE.Mesh(pomGeo, pomMat)
     pom.position.y = hatBaseY + hatH + 0.065
     headGroup.add(pom)
-    // -------------------------------------
 
     if (faceUrl) {
       const pipeline = processAvatar(faceUrl)
 
-      if (pipeline.displaySrc) {
-        textureLoader.load(pipeline.displaySrc, (tex) => {
-          tex.colorSpace = THREE.SRGBColorSpace
-          headMat.map = tex
-          headMat.needsUpdate = true
-        })
-      }
-
-      // Consumimos el rostro enfocado y circular (sin hombros)
-      const unwatchTex = watch(() => pipeline.processedFaceSrc, (newSrc) => {
-        if (newSrc && newSrc !== headMat.map?.image?.src) {
-          textureLoader.load(newSrc, (newTex) => {
+      // Strictly wait for the processing to finish before applying the mask
+      // This ensures we never see an unmasked/stretched image.
+      const unwatch = watch(() => pipeline.isProcessed, (processed) => {
+        if (processed && pipeline.processedFaceSrc) {
+          textureLoader.load(pipeline.processedFaceSrc, (newTex) => {
             newTex.colorSpace = THREE.SRGBColorSpace
-            const oldTex = headMat.map
+            
+            // Calculate perfect aspect ratio to completely avoid facial stretching
+            const imgAspect = newTex.image.width / newTex.image.height
+            const h = 1.1
+            const w = h * imgAspect
+
+            const newGeo = new THREE.PlaneGeometry(w, h, 16, 16)
+            const pos = newGeo.attributes.position
+            const curveDepth = w * 0.28 
+
+            for (let i = 0; i < pos.count; i++) {
+              const x = pos.getX(i)
+              const nx = x / (w / 2) 
+              const z = (Math.cos(nx * Math.PI / 2) - 1) * curveDepth
+              pos.setZ(i, z)
+            }
+            newGeo.computeVertexNormals()
+
+            if (headMesh.geometry) headMesh.geometry.dispose()
+            headMesh.geometry = newGeo
+
+            // Shell adjustment
+            shellMesh.scale.set(w * 0.8, h * 0.8, w * 0.6)
+            if (pipeline.meta && pipeline.meta.cropBox && pipeline.meta.faceBox) {
+               const faceCenterY = (pipeline.meta.faceBox.yMin + pipeline.meta.faceBox.yMax) / 2
+               const cropCenterY = (pipeline.meta.cropBox.yMin + pipeline.meta.cropBox.yMax) / 2
+               const yOffset = cropCenterY - faceCenterY
+               shellMesh.position.y = yOffset * 0.8
+            }
+
             headMat.map = newTex
             headMat.needsUpdate = true
-            if (oldTex) oldTex.dispose()
-            animState.isSwapping = true
-            animState.swapTime = clock.getElapsedTime()
+
+            // Trigger the character's arrival animation now that processing is done
+            targetScale.value = 1
           })
         }
-      })
-      activeUnwatchers.push(unwatchTex)
-
-      const unwatchMeta = watch(() => pipeline.meta, (meta) => {
-        if (meta && meta.cropBox) {
-          const cw = meta.cropBox.xMax - meta.cropBox.xMin
-          const ch = meta.cropBox.yMax - meta.cropBox.yMin
-          const aspect = cw / ch
-
-          const h = 1.1
-          const w = h * aspect
-
-          const newGeo = new THREE.PlaneGeometry(w, h, 16, 16)
-          const pos = newGeo.attributes.position
-          const curveDepth = w * 0.28 
-
-          for (let i = 0; i < pos.count; i++) {
-            const x = pos.getX(i)
-            const nx = x / (w / 2) 
-            const z = (Math.cos(nx * Math.PI / 2) - 1) * curveDepth
-            pos.setZ(i, z)
-          }
-          newGeo.computeVertexNormals()
-
-          if (headMesh.geometry) headMesh.geometry.dispose()
-          headMesh.geometry = newGeo
-
-          shellMesh.scale.set(w * 0.8, h * 0.8, w * 0.6)
-
-          if (meta.eyeBoxes && meta.eyeBoxes.leftEye && meta.eyeBoxes.rightEye) {
-            const eyeDist = Math.abs(meta.eyeBoxes.rightEye.x - meta.eyeBoxes.leftEye.x)
-            const eyeRatio = eyeDist / cw
-            shellMesh.scale.x *= (1.0 + (eyeRatio - 0.25) * 1.5)
-
-            if (meta.faceBox) {
-              const faceCenterY = (meta.faceBox.yMin + meta.faceBox.yMax) / 2
-              const cropCenterY = (meta.cropBox.yMin + meta.cropBox.yMax) / 2
-              const yOffset = cropCenterY - faceCenterY
-              shellMesh.position.y = yOffset * 0.8
-            }
-          }
-        }
       }, { immediate: true })
-      activeUnwatchers.push(unwatchMeta)
+      activeUnwatchers.push(unwatch)
     }
 
     const targetPos = new THREE.Vector3()
     if (index === 0) {
-      targetPos.set(0, 0, 2.5) // The Birther behind the cake
+      targetPos.set(0, 0, 2.5)
     } else {
       const angle = ((index - 1) / 3) * Math.PI + Math.PI/4
       targetPos.set(Math.cos(angle) * 3.5, 0, Math.sin(angle) * 1.5 + 2.0)
@@ -546,9 +503,9 @@ const initScene = () => {
       mesh: group, 
       headGroup,
       targetPos,
+      targetScale,
       isBirthdayPerson: index === 0,
-      timeOffset: Math.random() * 100,
-      animState
+      timeOffset: Math.random() * 100
     }
   }
 
@@ -598,7 +555,6 @@ const initScene = () => {
     animationId = requestAnimationFrame(animate)
     const t = clock.getElapsedTime()
 
-    // Orbital camera blending
     if (!isDragging) {
       targetAngle += Math.sin(t * 0.5) * 0.0008
     }
@@ -607,18 +563,15 @@ const initScene = () => {
     camera.position.z = Math.cos(currentAngle) * 16
     camera.lookAt(0, 1.5, 0)
 
-    // All candle flames flicker independently
     activeFlames.forEach((flame, i) => {
       const f = 1 + Math.sin(t * 16 + i * 0.82) * 0.10 + Math.sin(t * 31 + i * 1.5) * 0.05
       flame.scale.set(f * 0.88, f, f * 0.88)
     })
 
-    // Candle point lights flicker
     activeCandleLights.forEach((light, i) => {
       light.intensity = 13 + Math.sin(t * 23 + i * 2.1) * 5
     })
 
-    // Confetti rain
     if (confettiMesh) {
       for (let i = 0; i < confettiCount; i++) {
         const d = confettiData[i]
@@ -634,38 +587,33 @@ const initScene = () => {
       confettiMesh.instanceMatrix.needsUpdate = true
     }
 
-    // Balloons: gentle float and sway
     balloons.forEach(b => {
       b.group.position.y = b.baseY + Math.sin(t * b.speed + b.phase) * 0.38
       b.group.rotation.z = Math.sin(t * b.speed * 0.65 + b.phase) * 0.065
     })
 
-    // Gold stars: spin and drift
     floatingStars.forEach(s => {
       s.mesh.rotation.y += 0.022
       s.mesh.rotation.x += 0.011
       s.mesh.position.y = s.baseY + Math.sin(t * 0.76 + s.phase) * 0.26
     })
 
-    // Characters
     characters.forEach((char) => {
+      // Lerp character position
       char.mesh.position.lerp(char.targetPos, 0.03)
       char.headGroup.lookAt(camera.position)
 
-      if (char.isBirthdayPerson) {
-        char.mesh.position.y = Math.abs(Math.sin(t * 4)) * 0.6
-      } else {
-        char.mesh.position.y = Math.abs(Math.sin(t * 6 + char.timeOffset)) * 0.1
+      // Smoothly animate scale (arrive animation)
+      if (Math.abs(char.mesh.scale.x - char.targetScale.value) > 0.001) {
+        char.mesh.scale.lerp(new THREE.Vector3(char.targetScale.value, char.targetScale.value, char.targetScale.value), 0.08)
       }
 
-      if (char.animState.isSwapping) {
-        const elapsed = t - char.animState.swapTime
-        if (elapsed < 0.3) {
-          const bounce = 1 + Math.sin(elapsed * Math.PI / 0.3) * 0.15
-          char.headGroup.scale.set(bounce, bounce, bounce)
+      // Add gentle bobbing once fully arrived
+      if (char.targetScale.value === 1) {
+        if (char.isBirthdayPerson) {
+          char.mesh.position.y = Math.abs(Math.sin(t * 4)) * 0.6
         } else {
-          char.headGroup.scale.set(1, 1, 1)
-          char.animState.isSwapping = false
+          char.mesh.position.y = Math.abs(Math.sin(t * 6 + char.timeOffset)) * 0.1
         }
       }
     })

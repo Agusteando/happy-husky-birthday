@@ -68,8 +68,7 @@
     <main class="main-content landing-state" v-else>
       <div v-if="globalBirthers.length > 0">
         <div class="landing-header glass-panel">
-          <h2>🎉 Hoy celebramos a nivel global a:</h2>
-          <p>¡No pierda la oportunidad de enviar sus felicitaciones!</p>
+          <h2>🎉 Hoy festejamos a</h2>
         </div>
         
         <EmployeeTable 
@@ -292,15 +291,10 @@ const logout = async () => {
   text-align: center;
 }
 .landing-header h2 {
-  margin: 0 0 12px 0;
+  margin: 0;
   color: var(--primary-navy);
   font-size: 2rem;
   letter-spacing: -0.02em;
-}
-.landing-header p {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 1.1rem;
 }
 
 .controls-bar {
