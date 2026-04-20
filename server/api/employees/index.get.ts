@@ -2,19 +2,25 @@ import { pool } from '../../utils/db'
 import { fetchSigniaEmployees, extractBirthdayFromCurp, resolveSigniaUrl } from '../../utils/signia'
 import dayjs from 'dayjs'
 
+// PRIVACY RULE: Never expose, display, or export employee birth year to the client. Normalizing strictly to MM-DD.
+const formatPrivacyBday = (date: string | null) => {
+  if (!date) return null;
+  return dayjs(date).format('MM-DD');
+}
+
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const plantelCode = query.plantelCode as string
   const plantelNameFallback = query.plantelNameFallback as string
 
-  console.log(`[DEBUG-HHB] Server Adapter - Requested internal code: "${plantelCode}"`);
-
   let signiaData: any[] = []
 
-  // Skip hitting Signia entirely if looking explicitly for Externals
   if (plantelCode && plantelCode !== 'EXT') {
-    // Pass strictly the short code to Signia
-    signiaData = await fetchSigniaEmployees(plantelCode)
+    if (plantelCode === 'ALL') {
+      signiaData = await fetchSigniaEmployees()
+    } else {
+      signiaData = await fetchSigniaEmployees(plantelCode)
+    }
   }
 
   const [overridesRow]: any = await pool.query('SELECT * FROM overrides')
@@ -27,31 +33,29 @@ export default defineEventHandler(async (event) => {
     const ov = overrideMap.get(emp.id) || {}
     if (ov.baja) return null 
 
-    const birthday = ov.birthday ? dayjs(ov.birthday).format('YYYY-MM-DD') : extractBirthdayFromCurp(emp.curp)
+    const rawBirthday = ov.birthday || extractBirthdayFromCurp(emp.curp)
 
     return {
       ...emp,
       picture: resolveSigniaUrl(emp.picture),
       email: ov.email || emp.email,
-      birthday,
+      birthday: formatPrivacyBday(rawBirthday),
       high_rank: ov.high_rank === 1,
       event_id: ov.event_id || null,
       is_external: false
     }
   }).filter(Boolean)
 
-  // Append local external/guest users
   externalsRow.forEach((ext: any) => {
     if (ext.baja) return
     
-    // Allow if EXT is explicitly requested, or if the external user's manual UI label matches the selection
-    if (plantelCode === 'EXT' || ext.plantel === plantelNameFallback || ext.plantel === plantelCode) {
+    if (plantelCode === 'ALL' || plantelCode === 'EXT' || ext.plantel === plantelNameFallback || ext.plantel === plantelCode) {
       merged.push({
         id: ext.id,
         name: ext.name,
         plantel: { name: ext.plantel, label: ext.plantel },
         email: ext.email,
-        birthday: ext.birthday ? dayjs(ext.birthday).format('YYYY-MM-DD') : null,
+        birthday: formatPrivacyBday(ext.birthday),
         high_rank: ext.high_rank === 1,
         event_id: ext.event_id || null,
         picture: resolveSigniaUrl(ext.picture) || null,
@@ -60,11 +64,9 @@ export default defineEventHandler(async (event) => {
     }
   })
 
-  console.log(`[DEBUG-HHB] Server Adapter - Final merged records returned to client: ${merged.length}`)
-
   return merged.sort((a, b) => {
     if (!a.birthday) return 1
     if (!b.birthday) return -1
-    return dayjs(a.birthday).format('MM-DD').localeCompare(dayjs(b.birthday).format('MM-DD'))
+    return a.birthday.localeCompare(b.birthday)
   })
 })

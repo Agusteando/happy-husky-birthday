@@ -5,7 +5,7 @@
       
       <header class="header-glass">
         <div class="header-inner">
-          <div class="logo-area center-brand">
+          <div class="logo-area center-brand" @dblclick="showAuditModal = true" title="Doble clic para consultar auditoría de bajas">
             <img src="/hhb.png" alt="Happy Husky Birthday" class="logo-hhb-massive" />
             <div class="institutional-badge">
               <img src="/main.png" alt="IECS Logo" class="logo-main-small" />
@@ -31,7 +31,6 @@
       </div>
     </div>
 
-    <!-- Directorio de sede específica -->
     <main class="main-content" v-if="filterPlantel">
       <DashboardStats :stats="stats" />
 
@@ -58,13 +57,12 @@
         v-else 
         :data="filteredEmployees" 
         @update="updateEmployee" 
-        @delete="deleteEmployee"
+        @remove="handleRemove"
         @calendar="toggleCalendarEvent"
         @openStudio="openStudio"
       />
     </main>
 
-    <!-- Estado principal (Global): Mostramos cumpleañeros de hoy antes de filtrar -->
     <main class="main-content landing-state" v-else>
       <div v-if="globalBirthers.length > 0">
         <div class="landing-header glass-panel">
@@ -74,7 +72,7 @@
         <EmployeeTable 
           :data="globalBirthers" 
           @update="updateEmployee" 
-          @delete="deleteEmployee"
+          @remove="handleRemove"
           @calendar="toggleCalendarEvent"
           @openStudio="openStudio"
         />
@@ -87,7 +85,6 @@
       </div>
     </main>
 
-    <!-- Modal Extra User -->
     <div v-if="showAddModal" class="modal-overlay" @click.self="showAddModal = false">
       <div class="modal-content">
         <h3>Registrar invitado externo</h3>
@@ -113,6 +110,58 @@
       </div>
     </div>
 
+    <!-- Modal de confirmación de baja -->
+    <div v-if="employeeToRemove" class="modal-overlay" @click.self="employeeToRemove = null">
+      <div class="modal-content">
+        <h3>Confirmación de baja</h3>
+        <p class="modal-subtitle">¿Desea retirar a <strong>{{ employeeToRemove.name }}</strong> del panel de celebraciones?</p>
+        <div class="form-group">
+          <label>Motivo de la baja (Opcional)</label>
+          <input v-model="removeReason" placeholder="Ej. Fin de contrato, permiso, etc." />
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" @click="employeeToRemove = null">Cancelar</button>
+          <button class="btn btn-danger" @click="confirmRemove">Confirmar baja</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de auditoría oculto/administrativo -->
+    <div v-if="showAuditModal" class="modal-overlay" @click.self="showAuditModal = false">
+      <div class="modal-content large-modal">
+        <h3>Auditoría de Bajas</h3>
+        <p class="modal-subtitle">Registro de colaboradores retirados del panel de celebraciones.</p>
+        
+        <div v-if="loadingAudit" class="loading-state">
+          <div class="spinner"></div>
+        </div>
+        <table v-else class="audit-table">
+          <thead>
+            <tr>
+              <th>Colaborador</th>
+              <th>Fecha de retiro</th>
+              <th>Autorizado por</th>
+              <th>Motivo registrado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="log in auditLogs" :key="log.id">
+              <td>{{ log.employee_name }}</td>
+              <td>{{ new Date(log.removed_at).toLocaleString('es-MX') }}</td>
+              <td>{{ log.removed_by_user_name }} ({{ log.removed_by_user_email }})</td>
+              <td>{{ log.reason || 'Sin especificar' }}</td>
+            </tr>
+            <tr v-if="auditLogs.length === 0">
+              <td colspan="4" style="text-align: center; padding: 20px;">No hay registros de bajas.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" @click="showAuditModal = false">Cerrar panel</button>
+        </div>
+      </div>
+    </div>
+
     <TemplateStudio 
       v-if="studioEmployee" 
       :employee="studioEmployee" 
@@ -131,14 +180,19 @@ import { useEmployees, codeToUI } from '~/composables/useEmployees'
 
 const { 
   loading, stats, filteredEmployees, filterPlantel, filterSearch, heroFaces, globalBirthers,
-  fetchEmployees, fetchHeroFaces, updateEmployee, deleteEmployee, toggleCalendarEvent, addExternalUser, exportExcel 
+  fetchEmployees, fetchHeroFaces, updateEmployee, removeEmployee, toggleCalendarEvent, addExternalUser, exportExcel 
 } = useEmployees()
 
-// Dynamically generate UI options from the exact requested mapping dictionary
 const plantelOptions = Object.values(codeToUI)
 const showAddModal = ref(false)
 const newUser = ref({ name: '', email: '', birthday: '', plantel: '' })
 const studioEmployee = ref(null)
+
+const showAuditModal = ref(false)
+const auditLogs = ref([])
+const loadingAudit = ref(false)
+const employeeToRemove = ref(null)
+const removeReason = ref('')
 
 onMounted(() => {
   fetchHeroFaces()
@@ -161,6 +215,31 @@ const submitExternal = async () => {
   showAddModal.value = false
   newUser.value = { name: '', email: '', birthday: '', plantel: filterPlantel.value }
 }
+
+const handleRemove = (emp) => {
+  employeeToRemove.value = emp
+  removeReason.value = ''
+}
+
+const confirmRemove = async () => {
+  if (employeeToRemove.value) {
+    await removeEmployee(employeeToRemove.value, removeReason.value)
+    employeeToRemove.value = null
+  }
+}
+
+watch(showAuditModal, async (val) => {
+  if (val) {
+    loadingAudit.value = true
+    try {
+      auditLogs.value = await $fetch('/api/employees/removals')
+    } catch (e) {
+      console.error(e)
+    } finally {
+      loadingAudit.value = false
+    }
+  }
+})
 
 const logout = async () => {
   await $fetch('/api/auth/logout', { method: 'POST' })
@@ -205,6 +284,7 @@ const logout = async () => {
   flex-direction: column; 
   align-items: flex-start; 
   gap: 8px; 
+  cursor: default;
 }
 
 .logo-hhb-massive { 
@@ -326,6 +406,8 @@ const logout = async () => {
 .btn-secondary:hover { background: #F8FAFC; }
 .btn-ghost { background: transparent; color: var(--text-secondary); }
 .btn-ghost:hover { background: #F1F5F9; color: var(--primary-navy); }
+.btn-danger { background: var(--danger); color: white; }
+.btn-danger:hover { background: #E53E3E; box-shadow: 0 4px 15px rgba(245, 101, 101, 0.3); }
 
 .loading-state { 
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -346,11 +428,18 @@ const logout = async () => {
   display: flex; flex-direction: column; gap: 20px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
 }
+.large-modal { width: 850px; max-width: 90vw; max-height: 85vh; overflow-y: auto; }
+
 .modal-content h3 { margin: 0; color: var(--primary-navy); font-size: 1.5rem; }
 .modal-subtitle { margin: -10px 0 10px 0; color: var(--text-secondary); font-size: 0.95rem; line-height: 1.4;}
 .form-group { display: flex; flex-direction: column; gap: 8px; }
 .form-group label { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
 .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px; }
+
+.audit-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.9rem; text-align: left;}
+.audit-table th, .audit-table td { padding: 12px; border-bottom: 1px solid var(--border-color); }
+.audit-table th { color: var(--primary-navy); font-weight: 600; background: #F8FAFC; border-radius: 6px 6px 0 0;}
+.audit-table td { color: var(--text-secondary); }
 
 .empty-state {
   text-align: center;

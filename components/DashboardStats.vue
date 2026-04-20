@@ -3,7 +3,7 @@
     <div class="stat-pill">
       <span class="stat-icon">✨</span>
       <div class="stat-text">
-        <strong>{{ stats.total }}</strong> Colaboradores en la sede
+        <strong>{{ stats.total }}</strong> Colaboradores listados
       </div>
     </div>
     
@@ -17,7 +17,7 @@
     <div class="stat-pill">
       <span class="stat-icon">🌟</span>
       <div class="stat-text">
-        Edad promedio: <strong>{{ stats.avgAge }} años</strong>
+        <strong>{{ stats.thisMonthBdays }}</strong> Cumpleaños este mes
       </div>
     </div>
 

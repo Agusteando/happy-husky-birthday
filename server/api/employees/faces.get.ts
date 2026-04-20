@@ -17,7 +17,10 @@ export default defineEventHandler(async () => {
     const ov = overrideMap.get(emp.id) || {}
     if (ov.baja) return null
 
-    const birthday = ov.birthday ? dayjs(ov.birthday).format('YYYY-MM-DD') : extractBirthdayFromCurp(emp.curp)
+    // PRIVACY RULE: Never expose birth year to client. Normalizing strictly to MM-DD.
+    const rawBirthday = ov.birthday || extractBirthdayFromCurp(emp.curp)
+    const birthday = rawBirthday ? dayjs(rawBirthday).format('MM-DD') : null
+
     return {
       id: emp.id,
       name: emp.name,
@@ -36,7 +39,7 @@ export default defineEventHandler(async () => {
       id: ext.id,
       name: ext.name,
       picture: resolveSigniaUrl(ext.picture),
-      birthday: ext.birthday ? dayjs(ext.birthday).format('YYYY-MM-DD') : null,
+      birthday: ext.birthday ? dayjs(ext.birthday).format('MM-DD') : null,
       email: ext.email,
       high_rank: ext.high_rank === 1,
       event_id: ext.event_id || null,
@@ -44,10 +47,7 @@ export default defineEventHandler(async () => {
     })
   })
 
-  // Identificamos a los cumpleañeros del día a nivel global
-  const todayBirthers = allUsers.filter(u => u.birthday && dayjs(u.birthday).format('MM-DD') === todayStr)
-
-  // Rostros válidos para rellenar la escena si faltan cumpleañeros
+  const todayBirthers = allUsers.filter(u => u.birthday && u.birthday === todayStr)
   const validFaces = allUsers.filter(u => u.picture).sort(() => 0.5 - Math.random()).map(u => u.picture).slice(0, 5)
 
   return {

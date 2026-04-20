@@ -2,6 +2,10 @@
   <div class="cards-grid">
     <div v-for="item in data" :key="item.id" class="employee-card glass-panel" :class="{'birthday-glow': isToday(item.birthday)}">
       
+      <button class="remove-x-btn" @click.stop="emit('remove', item)" title="Retirar colaborador de las celebraciones">
+        <X class="icon-sm" />
+      </button>
+
       <div class="card-header">
         <PremiumAvatar :src="item.picture" :festive="isToday(item.birthday)" />
         
@@ -21,7 +25,14 @@
         <div class="editable-fields">
           <div class="field-group">
             <span class="field-icon">📅</span>
-            <input type="date" class="ghost-input" :value="item.birthday" @change="e => emit('update', item.id, { birthday: e.target.value })" title="Modificar fecha de nacimiento" />
+            <input 
+              type="text" 
+              class="ghost-input" 
+              :value="formatToDDMM(item.birthday)" 
+              @change="e => handleBdayChange(item.id, e.target.value)" 
+              placeholder="DD/MM" 
+              title="Modificar fecha (Día/Mes)" 
+            />
           </div>
           <div class="field-group">
             <span class="field-icon">✉️</span>
@@ -37,9 +48,6 @@
         <button class="action-btn btn-ghost" @click="emit('openStudio', item)" title="Diseñar felicitación">
           <Palette class="icon-sm" /> Diseñar
         </button>
-        <button class="action-btn btn-danger-subtle" @click="emit('delete', item.id)" title="Ocultar del directorio">
-          <UserMinus class="icon-sm" />
-        </button>
       </div>
 
     </div>
@@ -53,16 +61,33 @@
 </template>
 
 <script setup>
-import { Star, Calendar, Palette, UserMinus } from 'lucide-vue-next'
+import { Star, Calendar, Palette, X } from 'lucide-vue-next'
 import PremiumAvatar from '~/components/PremiumAvatar.vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/es'
 dayjs.locale('es')
 
 const props = defineProps({ data: Array })
-const emit = defineEmits(['update', 'delete', 'calendar', 'openStudio'])
+const emit = defineEmits(['update', 'remove', 'calendar', 'openStudio'])
 
-const isToday = (d) => d && dayjs(d).format('MM-DD') === dayjs().format('MM-DD')
+const isToday = (d) => d && d === dayjs().format('MM-DD')
+
+const formatToDDMM = (mmdd) => {
+  if (!mmdd) return '';
+  const parts = mmdd.split('-');
+  if (parts.length === 2) return `${parts[1]}/${parts[0]}`;
+  return mmdd;
+}
+
+const handleBdayChange = (id, val) => {
+  if (!val) return emit('update', id, { birthday: null });
+  const parts = val.split('/');
+  if (parts.length === 2) {
+    let d = parts[0].padStart(2, '0');
+    let m = parts[1].padStart(2, '0');
+    emit('update', id, { birthday: `${m}-${d}` });
+  }
+}
 </script>
 
 <style scoped>
@@ -95,17 +120,50 @@ const isToday = (d) => d && dayjs(d).format('MM-DD') === dayjs().format('MM-DD')
   border: 1px solid rgba(212, 175, 55, 0.4);
 }
 
+.remove-x-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  opacity: 0;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  background: white;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.employee-card:hover .remove-x-btn {
+  opacity: 1;
+  top: 12px;
+  right: 12px;
+}
+
+.remove-x-btn:hover {
+  background: #FEF2F2;
+  color: #DC2626;
+  border-color: #FECACA;
+  transform: scale(1.1);
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 20px; /* Incrementado para el Avatar Hero de 110px */
+  margin-bottom: 20px;
 }
 
 .actions-top {
   display: flex;
   gap: 8px;
-  padding-top: 8px; /* Alineación óptica con el tope del nuevo avatar */
+  padding-top: 8px;
 }
 
 .icon-btn { cursor: pointer; transition: 0.2s; }
@@ -200,9 +258,6 @@ const isToday = (d) => d && dayjs(d).format('MM-DD') === dayjs().format('MM-DD')
 
 .btn-active-cal { background: #EEF2FF; color: #4F46E5; border: 1px solid #C7D2FE; }
 .btn-active-cal:hover { background: #E0E7FF; }
-
-.btn-danger-subtle { flex: 0 0 40px; color: #F56565; border: 1px solid transparent; }
-.btn-danger-subtle:hover { background: #FFF5F5; border-color: #FED7D7; }
 
 .empty-state {
   grid-column: 1 / -1;

@@ -2,6 +2,7 @@ import { ref, computed } from 'vue'
 import dayjs from 'dayjs'
 
 export const codeToUI: Record<string, string> = {
+  ALL: "Todas las sedes (Global)",
   PT: "Primaria Toluca",
   PM: "Primaria Metepec",
   CT: "Casita Toluca",
@@ -38,7 +39,6 @@ export const useEmployees = () => {
       const birtherFaces = globalBirthers.value.map(b => b.picture).filter(Boolean)
       
       if (birtherFaces.length > 0) {
-        // Garantizamos que los cumpleañeros formen parte de la escena, rellenando con aleatorios
         const combined = Array.from(new Set([...birtherFaces, ...(data.fallbackFaces || [])])).slice(0, 5)
         heroFaces.value = combined
       } else {
@@ -81,16 +81,15 @@ export const useEmployees = () => {
              emp.email?.toLowerCase().includes(searchTxt)
     })
 
-    // Sorting: Cumpleaños del día siempre flotan en el Top #1, luego por orden cronológico del año
     return baseFiltered.sort((a, b) => {
-      const aIsToday = a.birthday && dayjs(a.birthday).format('MM-DD') === todayStr
-      const bIsToday = b.birthday && dayjs(b.birthday).format('MM-DD') === todayStr
+      const aIsToday = a.birthday === todayStr
+      const bIsToday = b.birthday === todayStr
       if (aIsToday && !bIsToday) return -1
       if (!aIsToday && bIsToday) return 1
       
       if (!a.birthday) return 1
       if (!b.birthday) return -1
-      return dayjs(a.birthday).format('MM-DD').localeCompare(dayjs(b.birthday).format('MM-DD'))
+      return a.birthday.localeCompare(b.birthday)
     })
   })
 
@@ -100,20 +99,18 @@ export const useEmployees = () => {
     if (total === 0) return null
 
     const withEmail = list.filter((e: any) => e.email).length
-    let validAges = 0
-    let totalAge = 0
+    let thisMonthBdays = 0
     let todayBdays = 0
     const todayStr = dayjs().format('MM-DD')
+    const currentMonth = dayjs().format('MM')
 
     list.forEach((e: any) => {
       if (e.birthday) {
-        const bdate = dayjs(e.birthday)
-        if (bdate.isValid()) {
-          totalAge += dayjs().diff(bdate, 'year')
-          validAges++
-          if (bdate.format('MM-DD') === todayStr) {
-            todayBdays++
-          }
+        if (e.birthday === todayStr) {
+          todayBdays++
+        }
+        if (e.birthday.startsWith(currentMonth)) {
+          thisMonthBdays++
         }
       }
     })
@@ -121,28 +118,38 @@ export const useEmployees = () => {
     return {
       total,
       withEmailPct: (withEmail / total * 100).toFixed(0),
-      avgAge: validAges ? Math.round(totalAge / validAges) : 0,
+      thisMonthBdays,
       todayBdays
     }
   })
 
   const updateEmployee = async (id: string, payload: any) => {
     try {
+      const index = employees.value.findIndex(e => e.id === id)
+      if (index !== -1) {
+        employees.value[index] = { ...employees.value[index], ...payload }
+      }
+      
       await $fetch('/api/employees/update', {
         method: 'PATCH',
         body: { id, ...payload }
       })
-      if (filterPlantel.value) await fetchEmployees(filterPlantel.value)
-      // Actualizamos hero si impacta globales
       await fetchHeroFaces()
     } catch (e) {
       console.error(e)
     }
   }
 
-  const deleteEmployee = async (id: string) => {
-    if (!confirm('¿Está seguro de ocultar a este colaborador de las celebraciones?')) return
-    await updateEmployee(id, { baja: true })
+  const removeEmployee = async (emp: any, reason: string) => {
+    try {
+      await $fetch('/api/employees/remove', {
+        method: 'POST',
+        body: { employee_id: emp.id, employee_name: emp.name, reason }
+      })
+      employees.value = employees.value.filter(e => e.id !== emp.id)
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const toggleCalendarEvent = async (emp: any) => {
@@ -165,7 +172,7 @@ export const useEmployees = () => {
   const addExternalUser = async (user: any) => {
     try {
       await $fetch('/api/employees/add', { method: 'POST', body: user })
-      if (filterPlantel.value === user.plantel || filterPlantel.value === codeToUI['EXT']) {
+      if (filterPlantel.value === user.plantel || filterPlantel.value === codeToUI['EXT'] || filterPlantel.value === codeToUI['ALL']) {
         await fetchEmployees(filterPlantel.value)
       }
       await fetchHeroFaces()
@@ -179,6 +186,7 @@ export const useEmployees = () => {
     const headers = ['Nombre', 'Email', 'Sede', 'Cumpleaños', 'Destacado']
     csvRows.push(headers.join(','))
 
+    // Privacy rule enforced on client: birthday is already stripped of year from server
     filteredEmployees.value.forEach((e: any) => {
       const row = [
         `"${e.name || ''}"`,
@@ -201,7 +209,7 @@ export const useEmployees = () => {
   return {
     employees, loading, filterPlantel, filterSearch, heroFaces, globalBirthers,
     filteredEmployees, stats,
-    fetchEmployees, fetchHeroFaces, updateEmployee, deleteEmployee,
+    fetchEmployees, fetchHeroFaces, updateEmployee, removeEmployee,
     toggleCalendarEvent, addExternalUser, exportExcel
   }
 }

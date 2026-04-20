@@ -46,7 +46,6 @@ pool.query(`
   )
 `).catch(console.error)
 
-// Nueva tabla para el motor de activos globales de felicitación
 pool.query(`
   CREATE TABLE IF NOT EXISTS asset_templates (
     id VARCHAR(255) PRIMARY KEY,
@@ -75,5 +74,17 @@ pool.query(`
   CREATE TABLE IF NOT EXISTS plantel_configs (
     plantel VARCHAR(100) PRIMARY KEY,
     recipient_emails TEXT
+  )
+`).catch(console.error)
+
+pool.query(`
+  CREATE TABLE IF NOT EXISTS removals_audit (
+    id VARCHAR(255) PRIMARY KEY,
+    employee_id VARCHAR(255),
+    employee_name VARCHAR(255),
+    removed_by_user_email VARCHAR(255),
+    removed_by_user_name VARCHAR(255),
+    removed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reason TEXT
   )
 `).catch(console.error)
